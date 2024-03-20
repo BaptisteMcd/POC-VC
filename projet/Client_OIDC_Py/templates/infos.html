@@ -1,0 +1,41 @@
+<!doctype html>
+<title>Home</title>
+
+<head>
+  <title>Mon Compte</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="static/bootstrap.min.css" rel="stylesheet" media="screen">
+</head>
+{% if username %}
+
+<body>
+  <h1>Compte {{ username }}, bienvenue !</h1>
+  <br>
+  <div class="box">
+    <h3>La réponse Keycloak</h3>
+    <code style="max-width: 1500px;display: block">
+      {{ serv_response }}
+    </code>
+  </div>
+
+  <br>
+  <h3>Options</h3>
+  <form action="/refresh" method="post">
+    <input class="btn btn-default" type="submit" value="Rafraichir avec le jeton">
+  </form>
+
+  <form action="/logout" method="post">
+    <input class="btn btn-default" type="submit" value="Se déconnecter">
+  </form>
+  <form action="/infos" method="post">
+    <input class="btn btn-default" type="submit" value="Informations utilisateur">
+  </form>
+
+  {% if error %}
+  <p class="error"><strong>Error:</strong> {{ error }}
+    {% endif %}
+</body>
+{% else %}
+<h1>Erreur de compte</h1>
+<a href="/login">S'authentifier</a>
+{% endif %}
