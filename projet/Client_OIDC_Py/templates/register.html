@@ -13,13 +13,18 @@
     <form class="form-signin" action="" method="post">
       <input type="text" placeholder="Username" name="username" value="{{
           request.form.username }}">
+      <input type="text" placeholder="email" name="email" value="{{
+            request.form.email }}">
+      <input type="text" placeholder="Nom" name="nom" value="{{
+              request.form.nom }}">
+      <input type="text" placeholder="Prénom" name="prenom" value="{{
+                request.form.prenom }}">
       <input type="password" placeholder="Password" name="password" value="{{
           request.form.password }}">
-      <input class="btn btn-default" type="submit" value="Login">
+      <input class="btn btn-default" type="submit" value="S'enregister">
     </form>
-
-    <!-- <a href="/register">S'enregister</a> -->
-    {% if error %}
+    <a href="/login">S'authentifier</a>
+    {% if error %}register
     <p class="error"><strong>Error:</strong> {{ error }}
       {% endif %}
   </div>
