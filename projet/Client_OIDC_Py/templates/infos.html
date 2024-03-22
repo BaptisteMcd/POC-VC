@@ -23,12 +23,9 @@
   <form action="/logout" method="post">
     <input class="btn btn-default" type="submit" value="Se déconnecter">
   </form>
-  <form action="/infos" method="post">
-    <input class="btn btn-default" type="submit" value="Informations utilisateur">
-  </form>
 
   {% if error %}
-  <p class="error"><strong>Error:</strong> {{ error }}
+  <p class="error"><strong>Erreur : </strong> {{ error }}
     {% endif %}
 </body>
 {% else %}

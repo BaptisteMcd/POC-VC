@@ -1,10 +1,12 @@
 # flask_ngrok_example.py
 from flask import Flask, render_template, redirect, url_for, request, session
 import requests
-from Requests import requetes_keycloak
+from Requests import requetes_keycloak # Requêtes préparées 
+import config # Config
+
 
 app = Flask(__name__,static_url_path='/static')
-app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+app.secret_key = config.app_secret_key
 
 
 @app.route('/')
@@ -16,11 +18,9 @@ def login():
     error = None
     if request.method == 'POST':
         rq_code , rq_json = requetes_keycloak.requete_jeton_user(request.form['username'],request.form['password'])
-        #print(rq_json)
         if(rq_code != 200):
             error = 'Invalid Credentials. Please try again.'
         else:
-            print('login successfull')
             session['access_token'] = rq_json['access_token']
             session['refresh_token'] = rq_json['refresh_token']
             session['user'] = request.form['username']
@@ -32,29 +32,25 @@ def login():
 def home():
     return render_template('home.html',username= request.args.get('user'),serv_response = request.args.get('req'))
 
-"""
+
 @app.route('/register', methods=['GET','POST'])
 def register():
     error = None
     if request.method == 'POST':
-        rq_code , rq_json = requetes_keycloak.requete_s_enregister(request.form['username'],request.form['password'],request.form['prenom'],request.form['nom'],request.form['email'])
-        #print(rq_json)
-        print(rq_code)
-        print(rq_json)
-        
-        if(rq_code != 200):
+        r,r_json = requetes_keycloak.requete_jeton_client(config.client_secret)
+        rq_code , rq_json = requetes_keycloak.requete_s_enregister(request.form['username'],request.form['password'],request.form['prenom'],request.form['nom'],request.form['email'],r_json['access_token'])
+        if(rq_code != 201):
             error = 'Invalid Credentials. Please try again.'
-            error = rq_json['error']
+            error = rq_json.json().get('errorMessage')
         else:
-            print('register successfull')
-            session['access_token'] = rq_json['access_token']
-            session['refresh_token'] = rq_json['refresh_token']
             session['user'] = request.form['username']
-            print("ici")
+            rq_code , rq_json = requetes_keycloak.requete_jeton_user(request.form['username'],request.form['password'])
+            session['access_token'] = rq_json['access_token']
+            session['refresh_token'] = rq_json['refresh_token']      
             return redirect(url_for('home',req = rq_json,user = request.form['username']))
 
     return render_template('register.html', error=error)
-"""
+
 
 @app.route('/logout', methods=['POST'])
 def logout():
@@ -71,7 +67,6 @@ def infos():
     if 'access_token' in session:
         if request.method == 'POST':
             statut ,rq = requetes_keycloak.requete_infos(session['access_token'])
-            print("statut de la requete : " + str(statut))
             if statut == 200 or statut == 204 :
                 rq_code , rq_json = requetes_keycloak.requete_infos(session['access_token'])
                 return redirect(url_for('infos',req = rq_json,user = session['user']))
