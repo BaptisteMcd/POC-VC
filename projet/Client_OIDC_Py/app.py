@@ -3,8 +3,12 @@ from flask import Flask, render_template, redirect, url_for, request, session
 import requests
 from Requests import requetes_keycloak # Requêtes préparées 
 import config # Config
+from base64 import b64decode
 
-
+import jwt
+from cryptography.hazmat.primitives import serialization
+from jwt import PyJWKClient
+    
 app = Flask(__name__,static_url_path='/static')
 app.secret_key = config.app_secret_key
 
@@ -24,7 +28,11 @@ def login():
             session['access_token'] = rq_json['access_token']
             session['refresh_token'] = rq_json['refresh_token']
             session['user'] = request.form['username']
-            return redirect(url_for('home',req = rq_json,user = request.form['username']))
+
+            pubkey = requetes_keycloak.requete_get_pubkey()
+            payload = jwt.decode(rq_json['access_token'], pubkey, algorithms=["RS256"],options={"verify_aud": False, "verify_signature": True}) #CHECKER AUDIENCE
+            var_to_send = str(rq_json) +"\r\n"+ str(payload)
+            return redirect(url_for('home',req = var_to_send,user = request.form['username']))
     return render_template('login.html', error=error)
 
 
@@ -48,7 +56,6 @@ def register():
             session['access_token'] = rq_json['access_token']
             session['refresh_token'] = rq_json['refresh_token']      
             return redirect(url_for('home',req = rq_json,user = request.form['username']))
-
     return render_template('register.html', error=error)
 
 
@@ -72,3 +79,7 @@ def infos():
                 return redirect(url_for('infos',req = rq_json,user = session['user']))
         else:
             return render_template('infos.html',username= request.args.get('user'),serv_response = request.args.get('req'))
+
+# mettre en dernier pour 
+if __name__ == '__main__':
+    app.run(host='0.0.0.0',port='5000',debug=True)
