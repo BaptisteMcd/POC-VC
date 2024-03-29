@@ -6,6 +6,17 @@ import curlify
 class requetes_keycloak:
 
     def requete_jeton_user(utilisateur,mdp):
+        """ Effectue une requête à un client KC pour obtenir un jeton d'accès pour un utilisateur 
+        Parameters
+        ----------
+            utilisateur (str): Nom d utilisateur
+            mdp (str): Mot de passe
+        Returns
+        -------
+            int: Code de statut de la requête. 200 si OK
+            dict: Réponse de la requête
+        """
+        
         url = 'http://'+config.ip_kc+':'+config.port_kc+'/realms/'+config.realm_name+'/protocol/openid-connect/token'
         charge_utile = {
             'client_id':config.client_id,
@@ -22,6 +33,16 @@ class requetes_keycloak:
         return reponse.status_code, r_json
 
     def requete_deconnecter(access_token,refresh_token):
+        """ Effectue une requête à un client KC pour déconnecter un utilisateur
+        Parameters
+        ----------
+            access_token (str): Jeton d accès
+            refresh_token (str): Jeton de rafraîchissement
+        Returns
+        -------
+            int: Code de statut de la requête, 204 si OK
+        """
+
         url = 'http://'+config.ip_kc+':'+config.port_kc+'/realms/'+config.realm_name+'/protocol/openid-connect/logout'
         charge_utile = {
             'client_id':config.client_id,
@@ -32,7 +53,14 @@ class requetes_keycloak:
         reponse = requests.post(url, data = charge_utile)
         return reponse.status_code
 
-    def requete_jeton_client(client_secret): 
+    def requete_jeton_client(): 
+        """ Effectue une requête à un client KC pour obtenir un jeton d'accès pour le client
+        Returns
+        -------
+            int: Code de statut de la requête, 201 si OK
+            dict: Réponse de la requête
+        """
+        
         url = 'http://'+config.ip_kc+':'+config.port_kc+'/realms/'+config.realm_name+'/protocol/openid-connect/token'
         charge_utile = {
             'client_id': config.client_id,
@@ -40,20 +68,22 @@ class requetes_keycloak:
             'grant_type': 'client_credentials',
             'scope': 'openid',
         }
-        #only testing here 
-        url = 'http://'+config.ip_kc+':'+config.port_kc+'/realms/master/protocol/openid-connect/token'
-        charge_utile = {
-            "client_id": "admin-cli",
-            "username": "admin",
-            "password": "admin",
-            "grant_type": "password",
-            
-        }
         reponse = requests.post(url, data = charge_utile)
+        print(reponse.request.url)
         r_json = reponse.json()
         return reponse.status_code, r_json
 
     def requete_infos(bearer):
+        """ Effectue une requête à un client KC pour obtenir des informations sur un utilisateur
+        Parameters
+        ----------
+            bearer (str): Jeton d accès du client administrateur
+        Returns
+        -------
+            int: Code de statut de la requête, 204 si OK
+            dict: Réponse de la requête
+        """
+        
         url = 'http://'+config.ip_kc+':'+config.port_kc+'/realms/'+config.realm_name+'/protocol/openid-connect/userinfo'
         headers = {
             'client_id': config.client_id,
@@ -65,8 +95,22 @@ class requetes_keycloak:
         r_json = reponse.json()
         return reponse.status_code, r_json
 
-    def requete_s_enregister(utilisateur,mdp,prenom,nom,email,access_token):
-        #201 good
+    def requete_s_enregister(access_token,utilisateur,mdp,prenom,nom,email):
+        """ Effectue une requête à un client KC pour enregistrer un utilisateur
+        Parameters
+        ----------
+            access_token (str): Jeton d accès du client administrateur
+            utilisateur (str): Nom d utilisateur
+            mdp (str): Mot de passe
+            prenom (str): Prénom
+            nom (str): Nom
+            email (str): Adresse email
+        Returns
+        -------
+            int: Code de statut de la requête, 201 si OK
+            dict: Réponse de la requête
+        """
+        
         url = 'http://'+config.ip_kc+':'+config.port_kc+'/admin/realms/'+config.realm_name+'/users'
         headers = {
             # 'Accept-Encoding': 'gzip, deflate',
@@ -95,6 +139,12 @@ class requetes_keycloak:
     
     
     def requete_get_pubkey():
+        """ Effectue une requête à un client KC pour obtenir sa clé publique
+        Returns
+        -------
+            str: Clé publique format PEM
+        """
+        
         url = 'http://'+config.ip_kc+':'+config.port_kc+'/realms/'+config.realm_name
         reponse = requests.get(url)
         r_json = reponse.json()
@@ -102,14 +152,16 @@ class requetes_keycloak:
         return public_key
     
 
-print("ess2")
 #ONLY FOR TESTING
 #r,r_json = requetes_keycloak.requete_jeton_user("firstuser","test")
 
 r,r_json = requetes_keycloak.requete_jeton_client(config.client_secret)
-#print(r_json)
+print(r_json)
 print(r_json['access_token'])
 
 #r,r_json = requetes_keycloak.requete_s_enregister("testuserert7415m","psw","prenom","nom","b32222at2edz85@gmail.com",r_json['access_token'])
 #print(r)
 #print(str(r_json))
+
+
+

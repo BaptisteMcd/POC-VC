@@ -45,7 +45,7 @@ def home():
 def register():
     error = None
     if request.method == 'POST':
-        r,r_json = requetes_keycloak.requete_jeton_client(config.client_secret)
+        r,r_json = requetes_keycloak.requete_jeton_client()
         rq_code , rq_json = requetes_keycloak.requete_s_enregister(request.form['username'],request.form['password'],request.form['prenom'],request.form['nom'],request.form['email'],r_json['access_token'])
         if(rq_code != 201):
             error = 'Invalid Credentials. Please try again.'
