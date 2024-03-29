@@ -1,6 +1,7 @@
 import requests
 import json
 import config
+import curlify
 
 class requetes_keycloak:
 
@@ -15,6 +16,8 @@ class requetes_keycloak:
             'scope': 'openid'
         }
         reponse = requests.post(url, data = charge_utile)
+        print("curlify en dessous : ")
+        print(curlify.to_curl(reponse.request))
         r_json = reponse.json()
         return reponse.status_code, r_json
 
@@ -99,12 +102,13 @@ class requetes_keycloak:
         return public_key
     
 
-
+print("ess2")
 #ONLY FOR TESTING
 #r,r_json = requetes_keycloak.requete_jeton_user("firstuser","test")
-#r,r_json = requetes_keycloak.requete_jeton_client(config.client_secret)
+
+r,r_json = requetes_keycloak.requete_jeton_client(config.client_secret)
 #print(r_json)
-#print(r_json['access_token'])
+print(r_json['access_token'])
 
 #r,r_json = requetes_keycloak.requete_s_enregister("testuserert7415m","psw","prenom","nom","b32222at2edz85@gmail.com",r_json['access_token'])
 #print(r)
