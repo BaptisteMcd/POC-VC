@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define LOG_FILE_PATH "/var/log/audit/audit.log"
+// #define LOG_FILE_PATH "/var/log/audit/audit.log" // Erreurs de droits + resets des droits à la déconnexion
+#define LOG_FILE_PATH "/tmp/audit.log"
 void logger(const char* tag, const char* message) {
     time_t now;
     time(&now);
@@ -14,5 +15,5 @@ void logger(const char* tag, const char* message) {
 	}else{
 		fprintf(pAuditLogFile,"%.19s [%s]: %s\n", ctime(&now), tag, message);
 	}
-    fclose(pAuditLogFile);
+    	fclose(pAuditLogFile);
 }

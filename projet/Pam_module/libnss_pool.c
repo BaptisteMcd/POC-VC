@@ -15,7 +15,7 @@
 
 //poolPasswd file
 #define POOLPASSWD "/etc/pool-passwd"
-
+// GET /admin/realms/{realm}/users
 
 enum nss_status
 _nss_pool_getpwnam_r( const char *name, 
@@ -28,7 +28,7 @@ _nss_pool_getpwnam_r( const char *name,
 	printf("COURTCIRCUITAGE ...\n");
 	return NSS_STATUS_SUCCESS;
 
-	
+
 	
 }
 
