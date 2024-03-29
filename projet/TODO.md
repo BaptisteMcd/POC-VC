@@ -23,14 +23,15 @@ Objectif pour le 25 : déterminer de quoi a t on besoin sur le serveur "client" 
   * debugger le logout
   * mettre la conf du client SFTP dans le projet
   * Démoniser le client flask (systemd) et débarasser du setup.sh (utiliser l'objet app).
-  * le client flask et son démon doivent êter allumés par un compte de service dédié (eg: client-flask).
+  * le client flask et son démon doivent être allumés par un compte de service dédié (eg: client-flask).
 
 ## A faire
   * Lier via un PAM (éventuellement avec la librairie ci-dessous) une session UNIX à une session keycloak => logout quand sortie de la session
   * Installer un PGSQL 14.X et y créer 1 base de donner avec 3 tables (exemple1, exemple2, exemple3).
   * Etudier la liaison entre la session PAM et l'ouverture d'une session PGSQL.
   * Cela fait, etudier si différence entre pgsql containeurisé, et pgsql "bare-metal", si oui l'implémenter
-  
+  * Etudier la faisabilité de la suppression de comptes KC => client linux
+
 ## Reproducibilité
   * L'installation de chaque partie de notre environnement doit être réinstallable automatique par dockerfile ET/OU Ansible. (SAUF AUTORISATION PAS DE MODULES SHELL/COMMAND) => ne pas sous estimer la tâche.
   * Pour les conteneurs (eg: pgsql, keycloak, dockerfiles gités).
