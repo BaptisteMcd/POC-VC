@@ -6,7 +6,9 @@
 #include "kc_auth.h"
 #include "jsmn.h"
 
-// TODO : AJOUTER UN FICHIER DE CONFIG KC
+// TODO : AJOUTER UN FICHIER DE CONFIG KC DANS ETC
+// TODO PLUS TARD UTILISER TRUSTSYSTEM REDHAT
+// CHECK ASPRINTF
 
 struct MemoryStruct
 {
@@ -56,7 +58,7 @@ int main()
     reponse = jeton_client("openid", &access_token, &id_token);
     if (reponse)
     {
-        printf("Jeton client executé avec succès obtenu avec succès\n");
+        printf("Jeton client executé obtenu avec succès\n");
         logger("test", "jeton client obtenu avec succès");
         printf("access_token : %s\n\n", access_token);
         printf("refresh_token : %s\n\n", id_token);
@@ -66,6 +68,8 @@ int main()
         logger("test", "jeton client non obtenu");
     }
 
+    free(access_token);
+    free(id_token);
     bool valid = authentification_utilisateur("firstuser", "test");
     if (valid)
     {
@@ -81,7 +85,6 @@ int main()
 
 bool authentification_utilisateur(const char *user, const char *pass)
 {
-
     CURL *curl;
     CURLcode res;
     curl = curl_easy_init();
@@ -107,6 +110,8 @@ bool authentification_utilisateur(const char *user, const char *pass)
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, devnull);
 
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+        free(data);
+
         // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
         res = curl_easy_perform(curl);
         curl_slist_free_all(headers);
@@ -135,7 +140,7 @@ const bool jeton_client(char *scope, char **access_token, char **id_token)
 {
     // TODO : Ajouter la gestion des erreurs
     // Déterminer les paramètres vraiment nécessaire
-    
+
     CURL *curl;
     CURLcode res;
 
@@ -179,6 +184,7 @@ const bool jeton_client(char *scope, char **access_token, char **id_token)
     {
         fprintf(stderr, "curl_easy_perform() failed: %s\n",
                 curl_easy_strerror(res));
+        free(chunk.memory);
         return false;
     }
     else
@@ -223,6 +229,56 @@ const bool jeton_client(char *scope, char **access_token, char **id_token)
         // printf("%lu :", response_code);
         // printf("%s\n", chunk.memory);
         // printf("%lu bytes retrieved\n", (unsigned long)chunk.size);
+        free(chunk.memory);
         return true;
+    }
+}
+
+const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *access_token)
+{
+
+    CURL *curl;
+    CURLcode res;
+    curl = curl_easy_init();
+    char *header_bearer;
+    char *request_url;
+    asprintf(header_bearer, "authorization: Bearer %s", access_token);
+    asprintf(request_url, "http://172.26.142.2:8080/admin/realms/DevRealm/users?exact=true&username=%s", nom_utilisateur);
+
+    if (curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_easy_setopt(curl, CURLOPT_URL, "http://172.26.142.2:8080/admin/realms/DevRealm/users?username=a&exact=true");
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:123.0) Gecko/20100101 Firefox/123.0");
+        headers = curl_slist_append(headers, header_bearer);
+        headers = curl_slist_append(headers, "content-type: application/json");
+        headers = curl_slist_append(headers, "client_id: Client-test");
+        headers = curl_slist_append(headers, "grant_type: password");
+        headers = curl_slist_append(headers, "client_secret: gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        const char *data = "";
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+        res = curl_easy_perform(curl);
+        curl_slist_free_all(headers);
+    }
+    curl_easy_cleanup(curl);
+
+    long response_code;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+
+    free(header_bearer);
+    free(request_url);
+    if (res != CURLE_OK)
+    {
+        fprintf(stderr, "curl_easy_perform() failed: %s\n",
+                curl_easy_strerror(res));
+        return false;
+    }
+    else
+    {
+        // Bon code de réponse mais ça ne signifie pas que l'utilisateur existe !
     }
 }

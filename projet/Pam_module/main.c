@@ -101,7 +101,6 @@ bool KC_auth(const char *user, const char *pass)
 	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
-	char *response;
 	FILE *devnull = fopen("/dev/null", "w+");
 
 	if (curl)
@@ -117,15 +116,15 @@ bool KC_auth(const char *user, const char *pass)
 		headers = curl_slist_append(headers, "User-Agent: python-requests/2.31.0");
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 		// char *data;// = "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=firstuser&password=test&grant_type=password&scope=openid";
-		char *data;
-		asprintf(&data, "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=%s&password=%s&grant_type=password&scope=openid", user, pass);
+		char *post_data;
+		asprintf(&post_data, "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=%s&password=%s&grant_type=password&scope=openid", user, pass);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, devnull);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, devnull);// ne pas print les données reçues
 
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
-		// curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
 		res = curl_easy_perform(curl);
 		curl_slist_free_all(headers);
+		free(post_data);
 	}
 
 	fclose(devnull);
