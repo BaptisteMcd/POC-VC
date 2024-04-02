@@ -27,7 +27,7 @@ const bool jeton_client(char *scope, char ** access_token, char ** id_token);
  * @param access_token le jeton d'accès du client administrateur utilisé pour la recherche
  * @return true si l'utilisateur existe, false sinon
  */
-const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *access_token);
+const bool verif_existance_utilisateur(const char *nom_utilisateur, const char **access_token);
 
 
 #endif /* KC_AUTH_H */

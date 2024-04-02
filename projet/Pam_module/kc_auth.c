@@ -2,13 +2,16 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <time.h>
+#include <string.h>
+
 #include "logger.c"
 #include "kc_auth.h"
 #include "jsmn.h"
 
-// TODO : AJOUTER UN FICHIER DE CONFIG KC DANS ETC
-// TODO PLUS TARD UTILISER TRUSTSYSTEM REDHAT
-// CHECK ASPRINTF
+// #include <libconfig.h> ?
+//  TODO : AJOUTER UN FICHIER DE CONFIG KC DANS ETC
+//  TODO PLUS TARD UTILISER TRUSTSYSTEM REDHAT
+//  CHECK ASPRINTF
 
 struct MemoryStruct
 {
@@ -68,19 +71,22 @@ int main()
         logger("test", "jeton client non obtenu");
     }
 
-    free(access_token);
-    free(id_token);
-    bool valid = authentification_utilisateur("firstuser", "test");
+    bool valid = verif_existance_utilisateur("firuser",(const char **) &access_token);
     if (valid)
     {
-        logger("test", "authentification fonctionnelle");
+        printf("Utilisateur trouvé\n");
+        logger("test", "verif user fonctionnelle");
         return 1;
     }
     else
     {
-        logger("test", "authentification non fonctionnelle");
+        printf("Utilisateur non trouvé\n");
+        logger("test", "verif user non fonctionnelle");
         return 0;
     }
+    free(access_token);
+    free(id_token);
+    return 0;
 }
 
 bool authentification_utilisateur(const char *user, const char *pass)
@@ -94,7 +100,7 @@ bool authentification_utilisateur(const char *user, const char *pass)
     if (curl)
     {
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_easy_setopt(curl, CURLOPT_URL, "http://172.26.142.2:8080/realms/DevRealm/protocol/openid-connect/token");
+        curl_easy_setopt(curl, CURLOPT_URL, "http://172.30.6.16:8080/realms/DevRealm/protocol/openid-connect/token");
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
         struct curl_slist *headers = NULL;
@@ -106,7 +112,6 @@ bool authentification_utilisateur(const char *user, const char *pass)
         // char *data;// = "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=firstuser&password=test&grant_type=password&scope=openid";
         char *data;
         asprintf(&data, "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=%s&password=%s&grant_type=password&scope=openid", user, pass);
-
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, devnull);
 
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
@@ -136,7 +141,7 @@ bool authentification_utilisateur(const char *user, const char *pass)
     }
 }
 
-const bool jeton_client(char *scope, char **access_token, char **id_token)
+const bool jeton_client(char *scope, char **p_access_token, char **p_id_token)
 {
     // TODO : Ajouter la gestion des erreurs
     // Déterminer les paramètres vraiment nécessaire
@@ -152,7 +157,7 @@ const bool jeton_client(char *scope, char **access_token, char **id_token)
     if (curl)
     {
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_easy_setopt(curl, CURLOPT_URL, "http://172.26.142.2:8080/realms/DevRealm/protocol/openid-connect/token");
+        curl_easy_setopt(curl, CURLOPT_URL, "http://172.30.6.16:8080/realms/DevRealm/protocol/openid-connect/token");
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
         struct curl_slist *headers = NULL;
@@ -162,7 +167,7 @@ const bool jeton_client(char *scope, char **access_token, char **id_token)
         headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
         headers = curl_slist_append(headers, "User-Agent: python-requests/2.31.0");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        const char *data = "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&scope=openid&grant_type=client_credentials";
+        const char *data = "client_id=Client-test&client_secret=mreTXvrDboTwSrEgUuDxKcVWqyW8FP7M&scope=openid&grant_type=client_credentials";
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
 
         /* send all data to this function  */
@@ -197,26 +202,26 @@ const bool jeton_client(char *scope, char **access_token, char **id_token)
          */
         jsmn_parser p;
         jsmntok_t t[128]; /* We expect no more than 128 JSON tokens */
-
         jsmn_init(&p);
         int r = jsmn_parse(&p, chunk.memory, chunk.size, t, sizeof(t) / sizeof(t[0]));
         if (r < 0)
         {
-            printf("Failed to parse JSON: %d\n", r);
-            return NULL;
+            printf("Failed to parse JSON performing request for Client token : %d\n", r);
+            printf("%s\n", chunk.memory);
+            return false;
         }
         for (int i = 1; i < r; i++)
         {
             if (jsoneq(chunk.memory, &t[i], "access_token") == 0)
             {
                 /* We may use strndup() to fetch string value */
-                asprintf(access_token, "%.*s", t[i + 1].end - t[i + 1].start,
+                asprintf(p_access_token, "%.*s", t[i + 1].end - t[i + 1].start,
                          chunk.memory + t[i + 1].start);
             }
             else if (jsoneq(chunk.memory, &t[i], "id_token") == 0)
             {
                 /* We may use strndup() to fetch string value */
-                asprintf(id_token, "%.*s", t[i + 1].end - t[i + 1].start,
+                asprintf(p_id_token, "%.*s", t[i + 1].end - t[i + 1].start,
                          chunk.memory + t[i + 1].start);
             }
             else
@@ -234,33 +239,40 @@ const bool jeton_client(char *scope, char **access_token, char **id_token)
     }
 }
 
-const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *access_token)
+const bool verif_existance_utilisateur(const char *nom_utilisateur, const char **access_token)
 {
 
     CURL *curl;
     CURLcode res;
+    char *header_bearer = NULL;
+    char *request_url= NULL;
+
+    struct MemoryStruct chunk;
+    chunk.memory = malloc(1); /* grown as needed by the realloc above */
+    chunk.size = 0;           /* no data at this point */
+    bool found  = false;
     curl = curl_easy_init();
-    char *header_bearer;
-    char *request_url;
-    asprintf(header_bearer, "authorization: Bearer %s", access_token);
-    asprintf(request_url, "http://172.26.142.2:8080/admin/realms/DevRealm/users?exact=true&username=%s", nom_utilisateur);
+    //Setup des headers
+    asprintf(&header_bearer, "authorization: Bearer %s", *access_token);
+    asprintf(&request_url, "http://172.30.6.16:8080/admin/realms/DevRealm/users?exact=true&username=%s", nom_utilisateur);
 
     if (curl)
     {
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_easy_setopt(curl, CURLOPT_URL, "http://172.26.142.2:8080/admin/realms/DevRealm/users?username=a&exact=true");
+        curl_easy_setopt(curl, CURLOPT_URL, request_url);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
         struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:123.0) Gecko/20100101 Firefox/123.0");
         headers = curl_slist_append(headers, header_bearer);
         headers = curl_slist_append(headers, "content-type: application/json");
-        headers = curl_slist_append(headers, "client_id: Client-test");
-        headers = curl_slist_append(headers, "grant_type: password");
-        headers = curl_slist_append(headers, "client_secret: gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         const char *data = "";
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+
         res = curl_easy_perform(curl);
         curl_slist_free_all(headers);
     }
@@ -271,14 +283,60 @@ const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *
 
     free(header_bearer);
     free(request_url);
+    printf(CURLE_OK);
     if (res != CURLE_OK)
     {
         fprintf(stderr, "curl_easy_perform() failed: %s\n",
                 curl_easy_strerror(res));
+        printf("%lu \n", response_code);
+        free(chunk.memory);
         return false;
     }
     else
     {
+        char * result_username = NULL;
+
         // Bon code de réponse mais ça ne signifie pas que l'utilisateur existe !
+        jsmn_parser p;
+        jsmntok_t t[128]; /* We expect no more than 128 JSON tokens */
+
+        jsmn_init(&p);
+        int r = jsmn_parse(&p, chunk.memory, chunk.size, t, sizeof(t) / sizeof(t[0]));
+        if (r < 0)
+        {
+            printf("Failed to parse JSON performing request to check user existance : %d\n", r);
+            return false;
+        }
+        for (int i = 1; i < r; i++)
+        {
+            if (jsoneq(chunk.memory, &t[i], "username") == 0)
+            {
+                printf("Found username\n");
+                /* We may use strndup() to fetch string value */
+                asprintf(&result_username, "%.*s", t[i + 1].end - t[i + 1].start,
+                         chunk.memory + t[i + 1].start);
+                
+            }
+            else
+            {
+                // printf("Other entry: %.*s\n", t[i + 1].end - t[i + 1].start,
+                //        chunk.memory + t[i + 1].start);
+            }
+            // i++;
+        }
+        
+        printf("%lu :", response_code);
+        printf("%s\n", chunk.memory);
+        if(result_username == NULL){
+            free(chunk.memory);
+            return false;
+        }
+        if(strcmp(result_username, nom_utilisateur) == 0 && t[0].size == 1){
+            found = true;
+            logger("test", "user found");
+        }
+        free(result_username); // cas ou mauvais utilisateur
+        free(chunk.memory);
+        return found;
     }
-}
+} 
