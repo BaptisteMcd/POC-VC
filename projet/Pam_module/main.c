@@ -12,6 +12,7 @@
 #include <curl/curl.h>
 #include "logger.c"
 
+
 #define MAX_USERFILE_SIZE 1024
 #define USERSFILE "users"
 
@@ -106,7 +107,7 @@ bool KC_auth(const char *user, const char *pass)
 	if (curl)
 	{
 		curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-		curl_easy_setopt(curl, CURLOPT_URL, "http://172.26.142.2:8080/realms/DevRealm/protocol/openid-connect/token");
+		curl_easy_setopt(curl, CURLOPT_URL, "http://172.30.6.16:8080/realms/DevRealm/protocol/openid-connect/token");
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
 		struct curl_slist *headers = NULL;
@@ -117,7 +118,7 @@ bool KC_auth(const char *user, const char *pass)
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 		// char *data;// = "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=firstuser&password=test&grant_type=password&scope=openid";
 		char *post_data;
-		asprintf(&post_data, "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=%s&password=%s&grant_type=password&scope=openid", user, pass);
+		asprintf(&post_data, "client_id=Client-test&client_secret=Z717yEXBXJMD490AckHFYSrY7PPSp8ym&username=%s&password=%s&grant_type=password&scope=openid", user, pass);
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, devnull);// ne pas print les données reçues
@@ -191,8 +192,9 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 	{
 		logger("sm authenticate good", username);
 		logger("sm authenticate good the password", password);
-
+		pam_putenv(handle, "USER_FULL_NAME_2=first");
 		printf("Welcome, %s\n", username);
+		
 		return PAM_SUCCESS;
 	}
 	else
@@ -305,7 +307,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc,
 
 	rmdir(dir_path);
 	printf("removed directory for user");
-
+	
 	return PAM_SUCCESS;
 }
 
