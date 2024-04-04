@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <curl/curl.h>
 #include "logger.c"
-
+#include "kc_auth.c"
 
 #define MAX_USERFILE_SIZE 1024
 #define USERSFILE "users"
@@ -187,7 +187,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 	/*Auth user reads a file with usernames and passwords and returns true if username
 	 * and password are correct. Obviously, you must not save clear text passwords */
 	//
-	bool result = KC_auth(username, password);
+	bool result = authentification_utilisateur(username, password);
 	if (result)
 	{
 		logger("sm authenticate good", username);
@@ -307,7 +307,7 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc,
 
 	rmdir(dir_path);
 	printf("removed directory for user");
-	
+
 	return PAM_SUCCESS;
 }
 

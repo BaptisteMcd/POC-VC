@@ -26,8 +26,8 @@ Ajout biblio :
 
     sudo ld -lcurl -x --shared -o /lib64/security/pam_custom.so main.o
 
-Idée : authent en curl good
-curl -X POST -H 'Accept: */*' -H 'Accept-Encoding: gzip, deflate' -H 'Connection: keep-alive' -H 'Content-Length: 134' -H 'Content-Type: application/x-www-form-urlencoded' -H 'User-Agent: python-requests/2.31.0' -d 'client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=firstuser&password=test&grant_type=password&scope=openid' http://172.26.142.2:8080/realms/DevRealm/protocol/openid-connect/token
+<!-- Idée : authent en curl good
+curl -X POST -H 'Accept: */*' -H 'Accept-Encoding: gzip, deflate' -H 'Connection: keep-alive' -H 'Content-Length: 134' -H 'Content-Type: application/x-www-form-urlencoded' -H 'User-Agent: python-requests/2.31.0' -d 'client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=firstuser&password=test&grant_type=password&scope=openid' http://172.26.142.2:8080/realms/DevRealm/protocol/openid-connect/token -->
 
 
 Problème d'une simple utilisatio de PAM : 
@@ -53,6 +53,8 @@ inspiré pour l'instant du module nss_pool :
 
 Compilation :
 
+    gcc -fPIC -Wall -shared -o libnss_pool.so -Wl,-soname,libnss_pool.sqo libnss_pool.c
+    or
     gcc -fPIC -Wall -shared -o libnss_pool.so -Wl,-soname,libnss_pool.so libnss_pool.c
 
 Copie dans /usr/lib64/ avec le nom en .so.2 : shared object 2.
@@ -67,8 +69,7 @@ Ajouter l'entré qui correspond à la librairie dans /etc/nsswitch.conf
     shadow:     files pool
     group:      files pool sss systemd
 
-Le changement est effectif après un redémarrage ou une déconnexion session 
-- > NE SURTOUT PAS SUPPRIMER LES ENTRÉES DÉJÀ PRÉSENTES
+Le changement de nss est effectif après un redémarrage ou une déconnexion session mais le changement d'objet partagé est effectif immédiatent.
 
 TODO : changer le nom pour un truc custom !
 
@@ -86,3 +87,20 @@ Est-ce que cela vaut la peine de faire une autre github avec les modules KC trad
 
 
 Dev futur ATTENTION à : https://github.com/FIWARE/keycloak-vc-issuer/issues/36
+<!-- non -->
+<!-- gcc -fPIC -c libnss_pool.c -lcurl
+sudo ld -lcurl -x --shared -o /usr/lib64/libnss_pool.so.2 libnss_pool.o -->
+
+problèmes : nss doit être extremement rapide mutex ? Que se passe-t-il ?
+https://github.com/donapieppo/libnss-ato
+un seul utilisateur type ? et des clones de cet utilisateur
+PAM fonctionne toujours en vérifiant username/login
+Inconvénient : pas de homme directory pas de session à part 
+
+
+https://github.com/cinek810/libnss-pool
+Un pool d'utilisateurs types ?
+
+
+Je crois que LDAP est bien pour le nss mais pas pour le pam
+http://www.minetti.org/wiki/Linux:Configuration_de_NSS/PAM_pour_une_authentification_via_un_LDAP

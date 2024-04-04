@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
-
-#include "logger.c"
+#include <stdlib.h>
+// #include "logger.c"
 #include "kc_auth.h"
 #include "jsmn.h"
 
@@ -51,50 +51,24 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
     return realsize;
 }
 
-int main()
-{
+char *read_conf(FILE *file, char const *desired_name) { 
+    char name[128];
+    char val[128];
 
-    bool reponse;
-    char *access_token;
-    char *id_token;
-
-    reponse = jeton_client("openid", &access_token, &id_token);
-    if (reponse)
-    {
-        printf("Jeton client executé obtenu avec succès\n");
-        logger("test", "jeton client obtenu avec succès");
-        printf("access_token : %s\n\n", access_token);
-        printf("refresh_token : %s\n\n", id_token);
+    while (fscanf(file, "%127[^=]=%127[^\n]%*c", name, val) == 2) {
+        if (0 == strcmp(name, desired_name)) {
+            return strdup(val);
+        }
     }
-    else
-    {
-        logger("test", "jeton client non obtenu");
-    }
-
-    bool valid = verif_existance_utilisateur("firuser",(const char **) &access_token);
-    if (valid)
-    {
-        printf("Utilisateur trouvé\n");
-        logger("test", "verif user fonctionnelle");
-        return 1;
-    }
-    else
-    {
-        printf("Utilisateur non trouvé\n");
-        logger("test", "verif user non fonctionnelle");
-        return 0;
-    }
-    free(access_token);
-    free(id_token);
-    return 0;
+    return NULL;
 }
+
 
 bool authentification_utilisateur(const char *user, const char *pass)
 {
     CURL *curl;
     CURLcode res;
     curl = curl_easy_init();
-    char *response;
     FILE *devnull = fopen("/dev/null", "w+");
 
     if (curl)
@@ -111,15 +85,15 @@ bool authentification_utilisateur(const char *user, const char *pass)
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         // char *data;// = "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=firstuser&password=test&grant_type=password&scope=openid";
         char *data;
-        asprintf(&data, "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=%s&password=%s&grant_type=password&scope=openid", user, pass);
+        asprintf(&data, "client_id=Client-test&client_secret=Z717yEXBXJMD490AckHFYSrY7PPSp8ym&username=%s&password=%s&grant_type=password&scope=openid", user, pass);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, devnull);
-
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
-        free(data);
 
         // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
         res = curl_easy_perform(curl);
         curl_slist_free_all(headers);
+        free(data);
+
     }
 
     fclose(devnull);
@@ -167,7 +141,7 @@ const bool jeton_client(char *scope, char **p_access_token, char **p_id_token)
         headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
         headers = curl_slist_append(headers, "User-Agent: python-requests/2.31.0");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        const char *data = "client_id=Client-test&client_secret=mreTXvrDboTwSrEgUuDxKcVWqyW8FP7M&scope=openid&grant_type=client_credentials";
+        const char *data = "client_id=Client-test&client_secret=Z717yEXBXJMD490AckHFYSrY7PPSp8ym&scope=openid&grant_type=client_credentials";
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
 
         /* send all data to this function  */
