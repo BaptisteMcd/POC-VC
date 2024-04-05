@@ -46,5 +46,15 @@ Objectif pour le 25 : déterminer de quoi a t on besoin sur le serveur "client" 
 
 * https://github.com/Ralnoc/pam-python
 
+# 05/04 - 14/04 
 
-* Bonus
+## Reliquaits 
+
+## A faire
+  * Login PGSQL via session (pam)
+  * Gestion mapping roles keycloak/ roles pgsql
+  * Information de session (jetons etc) dans un fichier (quelque part dans /var/)
+  * Gestion du logout
+
+## Reproductibilité / Documentation
+  * Automation et reproducibilité de tout (installation, compilation etc) + rédaction d'une ébauche de doc pour chaque composant.
