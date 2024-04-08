@@ -5,7 +5,7 @@ After=network.target
 [Service]
 User=client-flask
 WorkingDirectory=/home/client-flask
-ExecStart=/home/client/.venv/bin/python Client_OIDC_Py/app.py
+ExecStart=/home/client/.venv/bin/python /home/client/SFTP2/projet/Client_OIDC_Py/app.py
 Restart=always
 # SELINUX SE FOUT DE TOI 
 # sudo setenforce 0

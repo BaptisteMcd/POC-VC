@@ -4,10 +4,13 @@
 /** Fonction qui essaie d'authentifier un utilisateur contre le serveur Keycloak
  * @param user le nom de l'utilisateur
  * @param pass le mot de passe de l'utilisateur
+ * @param access_token pointeur sur char * : le jeton d'accès
+ * @param refresh_token pointeur sur char * : le jeton de rafraîchissement
  * 
  * @return true si l'authentification est réussie, false sinon
+ * Modifie les valeurs des pointeurs access_token et refresh_token
  */
-bool authentification_utilisateur(const char *user, const char *pass);
+bool authentification_utilisateur(const char *user, const char *pass, char **access_token, char **refresh_token);
 
 /**
  * Fonction qui récupère le jeton d'authentification et d'identification du client

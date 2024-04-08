@@ -20,7 +20,8 @@ http://www.fifi.org/doc/libpam-doc/html/pam_modules.html
 
 Compilation du fichier : (! ATTENTION PAS DE STACK PROTECTOR !)
 
-    gcc -fPIC -fno-stack-protector -c main.c -lcurl
+    gcc -fPIC -c ./src/main.c -lcurl
+    
 
 Ajout biblio : 
 
@@ -54,7 +55,8 @@ inspiré pour l'instant du module nss_pool :
 Compilation :
 
     gcc -fPIC -Wall -shared -o libnss_pool.so -Wl,-soname,libnss_pool.sqo libnss_pool.c
-    or
+or
+
     gcc -fPIC -Wall -shared -o libnss_pool.so -Wl,-soname,libnss_pool.so libnss_pool.c
 
 Copie dans /usr/lib64/ avec le nom en .so.2 : shared object 2.
@@ -62,7 +64,7 @@ Copie dans /usr/lib64/ avec le nom en .so.2 : shared object 2.
     sudo cp ./libnss_pool.so /usr/lib64/libnss_pool.so.2
 
 
-Ajouter l'entré qui correspond à la librairie dans /etc/nsswitch.conf 
+Ajouter l'entrée qui correspond à la librairie dans /etc/nsswitch.conf 
 
 
     passwd:     files pool sss systemd
@@ -73,7 +75,7 @@ Le changement de nss est effectif après un redémarrage ou une déconnexion ses
 
 TODO : changer le nom pour un truc custom !
 
-Si utilisation d'une distribution RedHat vérifier que authselect ne décide pas de la configuration, auxquel cas :
+Si utilisation d'une distribution RedHat vérifier que authselect ne décide pas de la configuration, auquel cas :
 
     authselect opt-out
 
@@ -95,7 +97,7 @@ problèmes : nss doit être extremement rapide mutex ? Que se passe-t-il ?
 https://github.com/donapieppo/libnss-ato
 un seul utilisateur type ? et des clones de cet utilisateur
 PAM fonctionne toujours en vérifiant username/login
-Inconvénient : pas de homme directory pas de session à part 
+Inconvénient : pas de home directory pas de session à part 
 
 
 https://github.com/cinek810/libnss-pool

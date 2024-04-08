@@ -4,7 +4,9 @@ import config
 import curlify
 
 class requetes_keycloak:
-
+    """ Classe contenant les requêtes préparées pour Keycloak
+    """
+    
     def requete_jeton_user(utilisateur,mdp):
         """ Effectue une requête à un client KC pour obtenir un jeton d'accès pour un utilisateur 
         Parameters
@@ -27,8 +29,8 @@ class requetes_keycloak:
             'scope': 'openid'
         }
         reponse = requests.post(url, data = charge_utile)
-        print("curlify en dessous : ")
-        print(curlify.to_curl(reponse.request))
+        # print("curlify en dessous : ")
+        # print(curlify.to_curl(reponse.request))
         r_json = reponse.json()
         return reponse.status_code, r_json
 
@@ -51,6 +53,7 @@ class requetes_keycloak:
             'refresh_token':refresh_token, 
             }
         reponse = requests.post(url, data = charge_utile)
+        # print(curlify.to_curl(reponse.request))
         return reponse.status_code
 
     def requete_jeton_client(): 
@@ -155,13 +158,13 @@ class requetes_keycloak:
 #ONLY FOR TESTING
 #r,r_json = requetes_keycloak.requete_jeton_user("firstuser","test")
 
-r,r_json = requetes_keycloak.requete_jeton_client(config.client_secret)
-print(r_json)
-print(r_json['access_token'])
-
-#r,r_json = requetes_keycloak.requete_s_enregister("testuserert7415m","psw","prenom","nom","b32222at2edz85@gmail.com",r_json['access_token'])
-#print(r)
-#print(str(r_json))
-
+# r,r_json = requetes_keycloak.requete_jeton_user("batman","test")
+# print(r_json)
+#print(r_json['access_token'])
+# input()
+#r,r_json = requetes_keycloak.requete_s_enregister(r_json['access_token'],"testuserert7415m","psw","prenom","nom","b32222at2edz85@gmail.com")
+# r = requetes_keycloak.requete_deconnecter(r_json['access_token'],r_json['refresh_token'])
+# print(r)
+# print(str(r_json))
 
 

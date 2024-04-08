@@ -8,7 +8,7 @@
 #include "jsmn.h"
 #include "logger.c"
 #include "kc_auth.c"
-#define CONFIG_FILE "kc_auth.conf" // Don't forget to include define config file
+#define CONFIG_FILE "../kc_auth.conf" // Don't forget to include define config file
 
 int main()
 {
@@ -28,6 +28,8 @@ int main()
     printf("IP : %s\n", ip);
     char * port = read_conf(f, "KEYCLOAK_PORT");
     printf("PORT : %s\n", port);
+
+
     reponse = jeton_client("openid", &access_token, &id_token);
     if (reponse)
     {
@@ -54,8 +56,10 @@ int main()
         logger("test", "verif user non fonctionnelle");
         
     }
+    free(access_token);
+    free(id_token);
 
-    bool auth = authentification_utilisateur("firstuser", "test");
+    bool auth = authentification_utilisateur("firstuser", "test",&access_token, &id_token);
     if (auth)
     {
         printf("Authentification réussie\n");
