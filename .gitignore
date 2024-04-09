@@ -172,3 +172,4 @@ cython_debug/
 .vscode/*
 
 projet/Client_OIDC_Py/__pycache__/config.cpython-312.pyc
+projet/Pam_module/valgrind-out.txt
