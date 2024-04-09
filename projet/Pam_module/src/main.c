@@ -10,11 +10,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <curl/curl.h>
-//#include "kc_auth.c"
+#include "../include/logger.h"
+#include "../include/kc_auth.h"
+// #include "kc_auth.c"
 
 #define MAX_USERFILE_SIZE 1024
 #define USERSFILE "users"
 
+void cleanup_pointer(pam_handle_t *handle, void *data, int error_status) { free(data); } // Cleanup function
 
 void change_pass(const char *, const char *);
 
@@ -55,57 +58,6 @@ void change_pass(const char *username, const char *password)
 	}
 }
 
-// // bool KC_auth(const char *user, const char *pass)
-// {
-
-// 	CURL *curl;
-// 	CURLcode res;
-// 	curl = curl_easy_init();
-// 	FILE *devnull = fopen("/dev/null", "w+");
-
-// 	if (curl)
-// 	{
-// 		curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-// 		curl_easy_setopt(curl, CURLOPT_URL, "http://172.30.6.16:8080/realms/DevRealm/protocol/openid-connect/token");
-// 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-// 		curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
-// 		struct curl_slist *headers = NULL;
-// 		headers = curl_slist_append(headers, "Accept: */*");
-// 		headers = curl_slist_append(headers, "Accept-Encoding: gzip, deflate");
-// 		headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-// 		headers = curl_slist_append(headers, "User-Agent: python-requests/2.31.0");
-// 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-// 		// char *data;// = "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=firstuser&password=test&grant_type=password&scope=openid";
-// 		char *post_data;
-// 		asprintf(&post_data, "client_id=Client-test&client_secret=Z717yEXBXJMD490AckHFYSrY7PPSp8ym&username=%s&password=%s&grant_type=password&scope=openid", user, pass);
-// 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
-
-// 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, devnull);// ne pas print les données reçues
-
-// 		res = curl_easy_perform(curl);
-// 		curl_slist_free_all(headers);
-// 		free(post_data);
-// 	}
-
-// 	fclose(devnull);
-// 	curl_easy_cleanup(curl);
-
-// 	long response_code;
-// 	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-// 	// printf((int) response_code);
-// 	printf("%ld :", response_code);
-// 	if (response_code == 200)
-// 	{
-// 		// Succeeded
-// 		return 1;
-// 	}
-// 	else
-// 	{
-// 		// Failed
-// 		return 0;
-// 	}
-// }
-
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 								   const char **argv)
 {
@@ -124,8 +76,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 	}
 
 	/* Asking the application for a password */
-	pam_code =
-		pam_get_authtok(handle, PAM_AUTHTOK, &password, "PASSWORD?: ");
+	pam_code = pam_get_authtok(handle, PAM_AUTHTOK, &password, "PASSWORD: ");
 	if (pam_code != PAM_SUCCESS)
 	{
 		fprintf(stderr, "Can't get password");
@@ -143,31 +94,27 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 		}
 	}
 
-	/*Auth user reads a file with usernames and passwords and returns true if username
-	 * and password are correct. Obviously, you must not save clear text passwords */
-	//
-	char * access_token;
-	char * id_token;
-	bool result = authentification_utilisateur(username, password, &access_token, &id_token);
-	// printf("Here is the entire config :\nIP : %s\nPORT : %s\n", KEYCLOAK_IP, KEYCLOAK_PORT);
-	if (result)
-	{
+	char *access_token;
+	char *id_token;
+	char *refresh_token;
+	
+	if (authentification_utilisateur(username, password, &access_token, &refresh_token, &id_token))
+	{ // Authenticated
 		logger("sm authenticate good", username);
-		logger("sm authenticate good the password", password);
-		pam_putenv(handle, "USER_FULL_NAME_2=first");
-		pam_putenv(handle, "USER_FULL_NAME_2=first");
 		printf("Welcome, %s\n", username);
-		pam_putenv(handle, access_token);
+
+		// set the user env and tokens
+		pam_set_item(handle, PAM_USER, username);
+		pam_set_data(handle, "access_token", access_token, cleanup_pointer);
+		pam_set_data(handle, "id_token", id_token, cleanup_pointer);
+		pam_set_data(handle, "refresh_token", refresh_token, cleanup_pointer);
+
 		return PAM_SUCCESS;
 	}
 	else
-	{
-		int retval;
-		logger("sm authenticate bad password before", password);
+	{ // Bad authentification
 		fprintf(stderr, "Wrong username or password\n");
 		logger("sm authenticate bad", username);
-		logger("sm authenticate bad password after", password);
-
 		return PAM_PERM_DENIED;
 	}
 }
@@ -176,6 +123,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc,
 								const char **argv)
 {
 	/* This struct contains the expiry date of the account */
+	printf("pam_sm_acct_mgmt\n");
 	logger("pam_sm_acct_mgmt", "username to be defined");
 
 	struct tm expiry_date;
@@ -240,18 +188,11 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc,
 								   const char **argv)
 {
 	const char *username;
-	char dir_path[512];
-
 	/* Get the username from PAM */
 	pam_get_item(pamh, PAM_USER, (const void **)&username);
+	printf("pam_sm_open_session for user %s \n", username);
+
 	logger("pam_sm_open_session", username);
-
-	/* Creating directory path string */
-	sprintf(dir_path, "/home/%s", username);
-
-	mkdir(dir_path, 0770);
-	printf("Opened session for user %s\n", username);
-
 	return PAM_SUCCESS;
 }
 
@@ -259,29 +200,38 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc,
 									const char **argv)
 {
 
-
 	const char *username;
-	char dir_path[512];
 
 	/* Get the username from PAM */
 	pam_get_item(pamh, PAM_USER, (const void **)&username);
+	printf("Closing session for user %s...\n", username);
+	char *access_token;
+	char *id_token;
+	char *refresh_token;
+	pam_get_data(pamh, "access_token", (const void **)&access_token);
+	pam_get_data(pamh, "id_token", (const void **)&id_token);
+	pam_get_data(pamh, "refresh_token", (const void **)&refresh_token);
+
+	if (deconnection((const char **)&access_token, (const char **)&refresh_token))
+	{
+		printf("Déconnexion réussie\n");
+		logger("Déconnexion réussie", username);
+	}
+	else
+	{
+		printf("Déconnexion échouée\n");
+		logger("Déconnexion échouée", username);
+	}
+
+
 	logger("pam_sm_close_session", username);
-
-	// /* Creating directory path string */
-	// sprintf(dir_path, "/home/%s", username);
-
-	// rmdir(dir_path);
-	// printf("removed directory for user");
-
-	printf("Closed session for user %s\n", username);
-
 	return PAM_SUCCESS;
 }
 
 PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc,
 								const char **argv)
 {
-	printf("pam_sm_chauthtok\n");
+	printf("pam_sm_chauthtok \n");
 	const char *username;
 	const char *cur_password;
 	const char *new_password;
@@ -303,13 +253,14 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc,
 		/* Ask the application for the password. From this module function, pam_get_authtok()
 		 * with item type PAM_AUTHTOK asks for the new password with the retype. Therefore,
 		 * to ask for the current password we must use PAM_OLDAUTHTOK. */
-		pam_get_authtok(pamh, PAM_OLDAUTHTOK, &cur_password,
-						"Insert current password: ");
+		pam_get_authtok(pamh, PAM_OLDAUTHTOK, &cur_password, "Insert current password: ");
 
 		/* Check if the current password is correct */
-		char * access_token;
-		char * id_token;
-		if (authentification_utilisateur(username,cur_password,&access_token,&id_token)) // to rewrite right here
+		char *id_token;
+		char *access_token;
+		char *refresh_token;
+
+		if (authentification_utilisateur(username, cur_password, &access_token, &id_token, &refresh_token)) // to rewrite right here
 		{
 			pam_get_authtok(pamh, PAM_AUTHTOK, &new_password,
 							"New password: ");

@@ -101,14 +101,16 @@ __attribute__((destructor)) void fini(void)
     return;
 }
 
-bool authentification_utilisateur(const char *user, const char *pass, char **access_token, char **refresh_token)
+bool authentification_utilisateur(const char *user, const char *pass, char **p_access_token, char **p_refresh_token, char **p_id_token)
 {
-    // TODO : Ajout retour tokens access et refresh si nécessaire
     CURL *curl;
     CURLcode res;
     curl = curl_easy_init();
-    FILE *devnull = fopen("/dev/null", "w+");
 
+    struct MemoryStruct chunk;
+    chunk.memory = malloc(1); /* grown as needed by the realloc above */
+    chunk.size = 0;           /* no data at this point */
+    bool success = false;
     if (curl)
     {
         char *url;
@@ -121,21 +123,19 @@ bool authentification_utilisateur(const char *user, const char *pass, char **acc
         headers = curl_slist_append(headers, "Accept: */*");
         headers = curl_slist_append(headers, "Accept-Encoding: gzip, deflate");
         headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-        headers = curl_slist_append(headers, "User-Agent: python-requests/2.31.0");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        // char *data;// = "client_id=Client-test&client_secret=gf5V17TzXFDFWqnxOjPY4px4dw6KPHNQ&username=firstuser&password=test&grant_type=password&scope=openid";
         char *data;
         asprintf(&data, "client_id=%s&client_secret=%s&username=%s&password=%s&grant_type=password&scope=openid", CLIENT_ID, CLIENT_SECRET, user, pass);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, devnull);
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
-        // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
-        res = curl_easy_perform(curl);
+
+        res = curl_easy_perform(curl); // PERFORM REQUEST
         curl_slist_free_all(headers);
         free(data);
         free(url);
     }
-
-    fclose(devnull);
     curl_easy_cleanup(curl);
 
     long response_code;
@@ -143,22 +143,56 @@ bool authentification_utilisateur(const char *user, const char *pass, char **acc
     // printf((int) response_code);
     if (res != CURLE_OK)
     {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                curl_easy_strerror(res));
+        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        logger("Authentification utilisateur", "curl_easy_perform() failed");
         return false;
-    }
-    if (response_code == 200)
-    {
-        // Succeeded
-
-        return 1;
     }
     else
     {
-        printf("Wrong authentification, got response : %ld\n", response_code);
-        // Failed
-        return 0;
+        if (response_code == 200)
+        { // Succeeded
+            jsmn_parser p;
+            jsmntok_t t[128];
+            jsmn_init(&p);
+            int r = jsmn_parse(&p, chunk.memory, chunk.size, t, sizeof(t) / sizeof(t[0]));
+            if (r < 0)
+            { // Parsing failed
+                printf("Failed to parse JSON performing request for Client token : %d\n", r);
+                printf("%s\n", chunk.memory);
+                logger("Jeton client", "Failed to parse JSON");
+            }
+            else
+            { // Good parsing
+                for (int i = 1; i < r; i++)
+                {
+                    if (jsoneq(chunk.memory, &t[i], "access_token") == 0)
+                    {
+                        asprintf(p_access_token, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                        i += 1;
+                    }
+                    else if (jsoneq(chunk.memory, &t[i], "id_token") == 0)
+                    {
+                        asprintf(p_id_token, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                        i += 1;
+                    }
+                    else if (jsoneq(chunk.memory, &t[i], "refresh_token") == 0)
+                    {
+                        asprintf(p_refresh_token, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                        i += 1;
+                    }
+                }
+                logger("Authentification utilisateur", "Succeeded");
+                success = true;
+            }
+        }
+        else
+        { // Failed
+            logger("Authentification utilisateur", "Failed");
+            printf("Wrong username/password, got response : %ld from server\n", response_code);
+        }
     }
+    free(chunk.memory);
+    return success;
 }
 
 const bool jeton_client(char *scope, char **p_access_token, char **p_id_token)
@@ -168,11 +202,10 @@ const bool jeton_client(char *scope, char **p_access_token, char **p_id_token)
 
     CURL *curl;
     CURLcode res;
-
     struct MemoryStruct chunk;
-
     chunk.memory = malloc(1); /* grown as needed by the realloc above */
     chunk.size = 0;           /* no data at this point */
+    bool success = false;
     curl = curl_easy_init();
     if (curl)
     {
@@ -187,19 +220,16 @@ const bool jeton_client(char *scope, char **p_access_token, char **p_id_token)
         headers = curl_slist_append(headers, "Accept-Encoding: gzip, deflate");
         headers = curl_slist_append(headers, "Connection: keep-alive");
         headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
-        headers = curl_slist_append(headers, "User-Agent: python-requests/2.31.0");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         char *data;
         asprintf(&data, "client_id=%s&client_secret=%s&scope=%s&grant_type=client_credentials", CLIENT_ID, CLIENT_SECRET, scope);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
-
-        /* send all data to this function  */
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-
-        /* we pass our 'chunk' struct to the callback function */
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 
-        res = curl_easy_perform(curl);
+        res = curl_easy_perform(curl); // PERFORM REQUEST
+
+        // CLEANUP
         curl_slist_free_all(headers);
         free(url);
         free(data);
@@ -210,40 +240,42 @@ const bool jeton_client(char *scope, char **p_access_token, char **p_id_token)
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 
     if (res != CURLE_OK)
-    {
-        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-        free(chunk.memory);
-        return false;
+    { // Bad response
+        logger("Jeton client", "curl_easy_perform() failed");
     }
     else
-    {
+    { // Good response
         jsmn_parser p;
         jsmntok_t t[128];
         jsmn_init(&p);
         int r = jsmn_parse(&p, chunk.memory, chunk.size, t, sizeof(t) / sizeof(t[0]));
         if (r < 0)
-        {
+        { // Parsing failed
             printf("Failed to parse JSON performing request for Client token : %d\n", r);
             printf("%s\n", chunk.memory);
-            return false;
+            logger("Jeton client", "Failed to parse JSON");
         }
-        for (int i = 1; i < r; i++)
-        {
-            if (jsoneq(chunk.memory, &t[i], "access_token") == 0)
+        else
+        { // Good parsing
+            for (int i = 1; i < r; i++)
             {
-                asprintf(p_access_token, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
-                i += 1;
+                if (jsoneq(chunk.memory, &t[i], "access_token") == 0)
+                {
+                    asprintf(p_access_token, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                    i += 1;
+                }
+                else if (jsoneq(chunk.memory, &t[i], "id_token") == 0)
+                {
+                    asprintf(p_id_token, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                    i += 1;
+                }
             }
-            else if (jsoneq(chunk.memory, &t[i], "id_token") == 0)
-            {
-                asprintf(p_id_token, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
-                i += 1;
-            }
-            i++;
+            logger("Jeton client", "Succeeded");
+            success = true;
         }
-        free(chunk.memory);
-        return true;
     }
+    free(chunk.memory);
+    return success;
 }
 
 const bool verif_existance_utilisateur(const char *nom_utilisateur, const char **p_access_token)
@@ -267,7 +299,6 @@ const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
         struct curl_slist *headers = NULL;
-        headers = curl_slist_append(headers, "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:123.0) Gecko/20100101 Firefox/123.0");
         asprintf(&header_bearer, "authorization: Bearer %s", *p_access_token);
         headers = curl_slist_append(headers, header_bearer);
         headers = curl_slist_append(headers, "content-type: application/json");
@@ -290,47 +321,104 @@ const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
     if (res != CURLE_OK)
     { // Bad response
-        fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                curl_easy_strerror(res));
-        printf("%lu \n", response_code);
-        free(chunk.memory);
+        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        printf("Failed to perform request checking user existance, got code : %lu \n", response_code);
         return false;
     }
     else
     { // Good response but it doesn't mean the user is found
-        char *result_username = NULL;
-        jsmn_parser p;
-        jsmntok_t t[128]; /* We expect no more than 128 JSON tokens */
-        jsmn_init(&p);
-        int r = jsmn_parse(&p, chunk.memory, chunk.size, t, sizeof(t) / sizeof(t[0]));
+        if (response_code == 200)
+        { // Good response, parsing ...
+            char *result_username = NULL;
+            jsmn_parser p;
+            jsmntok_t t[128]; /* We expect no more than 128 JSON tokens */
+            jsmn_init(&p);
+            int r = jsmn_parse(&p, chunk.memory, chunk.size, t, sizeof(t) / sizeof(t[0]));
 
-        if (r < 0)
-        {
-            printf("Failed to parse JSON performing request to check user existance : %d\n", r);
-            return false;
-        }
-        for (int i = 1; i < r; i++)
-        {
-            if (jsoneq(chunk.memory, &t[i], "username") == 0)
+            if (r < 0)
             {
-                printf("Found username\n");
-                asprintf(&result_username, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                printf("Failed to parse JSON performing request to check user existance : %d\n", r);
+                logger("Existance utilisateur", "Failed to parse JSON");
+            }
+            else
+            { // Parsing JSON
+                for (int i = 1; i < r; i++)
+                {
+                    if (jsoneq(chunk.memory, &t[i], "username") == 0)
+                    { // Found username
+                        asprintf(&result_username, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                        i += 1;
+                    }
+                }
+
+                printf("%lu :", response_code);
+                printf("%s\n", chunk.memory);
+                if (result_username == NULL)
+                { // No username found
+                    logger("Existance utilisateur", "user not found");
+                }
+                if (strcmp(result_username, nom_utilisateur) == 0 && t[0].size == 1)
+                { // It's the right and only user
+                    found = true;
+                    logger("Existance utilisateur", "user found");
+                    free(result_username);
+                }
             }
         }
+    }
+    free(chunk.memory);
+    return found;
+}
 
-        printf("%lu :", response_code);
-        printf("%s\n", chunk.memory);
-        if (result_username == NULL)
-        { // No username found
-            found = false;
+const bool deconnection(const char **p_access_token, const char **p_refresh_token)
+{ // TOFINISH
+    CURL *curl;
+    CURLcode res;
+    curl = curl_easy_init();
+    if (curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+        char *url;
+        asprintf(&url, "http://%s:%s/realms/%s/protocol/openid-connect/logout", KEYCLOAK_IP, KEYCLOAK_PORT, REALM_NAME);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
+        struct curl_slist *headers = NULL;
+        headers = curl_slist_append(headers, "Accept: */*");
+        headers = curl_slist_append(headers, "Accept-Encoding: gzip, deflate");
+        headers = curl_slist_append(headers, "Connection: keep-alive");
+        headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        char *data;
+        asprintf(&data, "client_id=%s&client_secret=%s&Authorization=Bearer %s&refresh_token=%s", CLIENT_ID, CLIENT_SECRET, *p_access_token, *p_refresh_token);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+        res = curl_easy_perform(curl);
+
+        // Cleanup
+        free(data);
+        free(url);
+        curl_slist_free_all(headers);
+    }
+    curl_easy_cleanup(curl);
+
+    long response_code;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+    if (res != CURLE_OK)
+    { // Bad response
+        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        printf("Failed to perform request to disconnect user got code : %lu \n", response_code);
+        logger("Déconnexion", "wrong response");
+        return false;
+    }
+    else
+    { // Good response but it doesn't mean the user is found
+        if (response_code != 204)
+        { // Failed
+            printf("Failed to disconnect user got code : %lu \n", response_code);
+            logger("Déconnexion", "Failed");
+            return false;
         }
-        if (strcmp(result_username, nom_utilisateur) == 0 && t[0].size == 1)
-        { // It's the right and only user
-            found = true;
-            logger("Existance utilisateur", "user found");
-        }
-        free(result_username);
-        free(chunk.memory);
-        return found;
+        return true;
+        logger("Déconnexion", "Succeeded");
     }
 }

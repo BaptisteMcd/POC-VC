@@ -4,10 +4,10 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
-#include "kc_auth.h"
-#include "jsmn.h"
-#include "logger.c"
-#include "kc_auth.c"
+#include "../include/kc_auth.h"
+#include "../include/jsmn.h"
+#include "../src/logger.c"
+#include "../src/kc_auth.c"
 #define CONFIG_FILE "../kc_auth.conf" // Don't forget to include define config file
 
 int main()
@@ -15,6 +15,7 @@ int main()
 
     bool reponse;
     char *access_token;
+    char *refresh_token;
     char *id_token;
 
     FILE *f = fopen(CONFIG_FILE, "r");
@@ -48,18 +49,16 @@ int main()
     {
         printf("Utilisateur trouvé\n");
         logger("test", "verif user fonctionnelle");
-        
     }
     else
     {
         printf("Utilisateur non trouvé\n");
         logger("test", "verif user non fonctionnelle");
-        
     }
     free(access_token);
     free(id_token);
 
-    bool auth = authentification_utilisateur("firstuser", "test",&access_token, &id_token);
+    bool auth = authentification_utilisateur("firstuser", "test",&access_token, &refresh_token, &id_token);
     if (auth)
     {
         printf("Authentification réussie\n");
@@ -70,7 +69,18 @@ int main()
         printf("Authentification échouée\n");
         logger("test", "authentification échouée");
     }
+
+    bool deco = deconnection((const char **)&access_token, (const char **) &refresh_token);
+    if(deco){
+        printf("Déconnexion réussie\n");
+        logger("test", "déconnexion réussie");
+    }
+    else{
+        printf("Déconnexion échouée\n");
+        logger("test", "déconnexion échouée");
+    }
     free(access_token);
     free(id_token);
+    free(refresh_token);
     return valid;
 }
