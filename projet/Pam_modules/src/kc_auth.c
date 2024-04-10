@@ -7,6 +7,7 @@
 #include "../include/logger.h"
 #include "../include/kc_auth.h"
 #include "../include/jsmn.h"
+// #include "kc_auth.h"
 #define CONFIG_FILE "/etc/kc_auth.conf"
 
 // #include <libconfig.h> ?
@@ -421,4 +422,73 @@ const bool deconnection(const char **p_access_token, const char **p_refresh_toke
         return true;
         logger("Déconnexion", "Succeeded");
     }
+}
+
+const bool getpubkey(char **p_public_key)
+{
+    CURL *curl;
+    CURLcode res;
+
+    struct MemoryStruct chunk;
+    chunk.memory = malloc(1); /* grown as needed by the realloc above */
+    chunk.size = 0;
+    bool success = false;
+    curl = curl_easy_init();
+    if (curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
+        char *url;
+        asprintf(&url, "http://%s:%s/realms/%s", KEYCLOAK_IP, KEYCLOAK_PORT, REALM_NAME);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
+        struct curl_slist *headers = NULL;
+
+        headers = curl_slist_append(headers, "Accept: */*");
+        headers = curl_slist_append(headers, "Accept-Encoding: gzip, deflate");
+        headers = curl_slist_append(headers, "Connection: keep-alive");
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        res = curl_easy_perform(curl);
+        curl_slist_free_all(headers);
+    }
+    curl_easy_cleanup(curl);
+
+    long response_code;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+    if (res != CURLE_OK)
+    { // Bad response
+        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        printf("Failed to perform request checking user existance, got code : %lu \n", response_code);
+        return false;
+    }
+    else
+    { // Good response but it doesn't mean the user is found
+        jsmn_parser p;
+        jsmntok_t t[128]; /* We expect no more than 128 JSON tokens */
+        jsmn_init(&p);
+        int r = jsmn_parse(&p, chunk.memory, chunk.size, t, sizeof(t) / sizeof(t[0]));
+
+        if (r < 0)
+        {
+            printf("Failed to parse JSON performing request to check user existance : %d\n", r);
+            logger("Existance utilisateur", "Failed to parse JSON");
+        }
+        else
+        { // Parsing JSON
+            for (int i = 1; i < r; i++)
+            {
+                if (jsoneq(chunk.memory, &t[i], "public_key") == 0)
+                { // Found pubkey
+                    asprintf(p_public_key, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                    success = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    free(chunk.memory);
+    return success;
 }

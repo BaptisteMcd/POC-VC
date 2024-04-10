@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <curl/curl.h>
+// #include <jwt.h>
 #include "../include/logger.h"
 #include "../include/kc_auth.h"
 // #include "kc_auth.c"
@@ -75,29 +76,23 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 		return PAM_PERM_DENIED;
 	}
 
-	/* Asking the application for a password */
-	pam_code = pam_get_authtok(handle, PAM_AUTHTOK, &password, "PASSWORD: ");
-	if (pam_code != PAM_SUCCESS)
-	{
-		fprintf(stderr, "Can't get password");
-		return PAM_PERM_DENIED;
-	}
 
-	/* Checking the PAM_DISALLOW_NULL_AUTHTOK flag: if on, we can't accept empty passwords */
-	if (flags & PAM_DISALLOW_NULL_AUTHTOK)
-	{
-		if (password == NULL || strcmp(password, "") == 0)
-		{
-			fprintf(stderr,
-					"Null authentication token is not allowed!.");
-			return PAM_PERM_DENIED;
-		}
-	}
 
 	char *access_token;
 	char *id_token;
 	char *refresh_token;
+
+	/* Asking the application for a password */
+	pam_get_data(handle, "access_token", (const void **)&access_token);
+	// Get JWT from the access_token and validate its signature
+
 	
+	// // jwt_t *jwt = jwt_decode(id_token);
+	// if (jwt == NULL)
+	// {
+	// 	fprintf(stderr, "Can't get id_token");
+	// 	return PAM_PERM_DENIED;
+	// }
 	if (authentification_utilisateur(username, password, &access_token, &refresh_token, &id_token))
 	{ // Authenticated
 		logger("sm authenticate good", username);

@@ -38,4 +38,6 @@ const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *
 */
 const bool deconnection(const char ** p_access_token, const char ** p_id_token);
 
+const bool getpubkey(char **public_key);
+
 #endif /* KC_AUTH_H */
