@@ -61,7 +61,7 @@ void change_pass(const char *username, const char *password)
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 								   const char **argv)
 {
-	logger("pam_sm_authenticate", "username to be defined");
+	logger("pam_sm_authenticate first pam", "username to be defined");
 	printf("pam_sm_authenticate\n");
 
 	int pam_code;

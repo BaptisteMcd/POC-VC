@@ -1,0 +1,51 @@
+==111721== Memcheck, a memory error detector
+==111721== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
+==111721== Using Valgrind-3.22.0-bd4db67b1d-20231031 and LibVEX; rerun with -h for copyright info
+==111721== Command: /lib64/security/pam_custom.so
+==111721== Parent PID: 111720
+==111721== 
+--111721-- 
+--111721-- Valgrind options:
+--111721--    --leak-check=full
+--111721--    --show-leak-kinds=all
+--111721--    --track-origins=yes
+--111721--    --verbose
+--111721--    --log-file=valgrind-out.txt
+--111721-- Contents of /proc/version:
+--111721--   Linux version 6.7.9-200.fc39.x86_64 (mockbuild@c9040d5832f245329326c60b1688b627) (gcc (GCC) 13.2.1 20231205 (Red Hat 13.2.1-6), GNU ld version 2.40-14.fc39) #1 SMP PREEMPT_DYNAMIC Wed Mar  6 19:35:04 UTC 2024
+--111721-- 
+--111721-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-f16c-rdrand-rdseed
+--111721-- Page sizes: currently 4096, max supported 4096
+--111721-- Valgrind library directory: /usr/libexec/valgrind
+--111721-- Reading syms from /usr/lib64/security/pam_custom.so
+--111721-- Reading syms from /usr/libexec/valgrind/memcheck-amd64-linux
+--111721--    object doesn't have a dynamic symbol table
+--111721-- Scheduler: using generic scheduler lock implementation.
+--111721-- Reading suppressions file: /usr/libexec/valgrind/default.supp
+==111721== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-111721-by-root-on-fedora
+==111721== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-111721-by-root-on-fedora
+==111721== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-111721-by-root-on-fedora
+==111721== 
+==111721== TO CONTROL THIS PROCESS USING vgdb (which you probably
+==111721== don't want to do, unless you know exactly what you're doing,
+==111721== or are doing some strange experiment):
+==111721==   /usr/libexec/valgrind/../../bin/vgdb --pid=111721 ...command...
+==111721== 
+==111721== TO DEBUG THIS PROCESS USING GDB: start GDB like this
+==111721==   /path/to/gdb /lib64/security/pam_custom.so
+==111721== and then give GDB the following command
+==111721==   target remote | /usr/libexec/valgrind/../../bin/vgdb --pid=111721
+==111721== --pid is optional if only one valgrind process is running
+==111721== 
+==111721== 
+==111721== Process terminating with default action of signal 11 (SIGSEGV)
+==111721==  Bad permissions for mapped region at address 0x108000
+==111721==    at 0x108000: ??? (in /usr/lib64/security/pam_custom.so)
+==111721== 
+==111721== HEAP SUMMARY:
+==111721==     in use at exit: 0 bytes in 0 blocks
+==111721==   total heap usage: 0 allocs, 0 frees, 0 bytes allocated
+==111721== 
+==111721== All heap blocks were freed -- no leaks are possible
+==111721== 
+==111721== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

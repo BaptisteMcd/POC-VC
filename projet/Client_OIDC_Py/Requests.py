@@ -152,6 +152,7 @@ class requetes_keycloak:
         reponse = requests.get(url)
         r_json = reponse.json()
         public_key = "-----BEGIN PUBLIC KEY-----\n"+r_json['public_key']+"\n-----END PUBLIC KEY-----"
+        print(curlify.to_curl(reponse.request))
         return public_key
     
 
@@ -166,5 +167,5 @@ class requetes_keycloak:
 # r = requetes_keycloak.requete_deconnecter(r_json['access_token'],r_json['refresh_token'])
 # print(r)
 # print(str(r_json))
-
+requetes_keycloak.requete_get_pubkey()
 
