@@ -108,6 +108,7 @@ int main()
             for(int i =0; i < nroles; i=i+1){
                 printf("Role : %s\n",list_roles[i]);
             }
+            cleanupArray(list_roles,nroles);
         }
     }
     else

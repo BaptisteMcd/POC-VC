@@ -582,3 +582,9 @@ const bool parse_role_claims(const char **p_claims, const char *origin, char ***
     }
     return success;
 }
+void cleanupArray(char ** array, int n){
+    for(int i =0;i<n;i++){
+        free(array[i]);
+    }
+    free(array);
+}

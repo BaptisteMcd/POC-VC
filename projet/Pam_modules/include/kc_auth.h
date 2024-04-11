@@ -68,7 +68,9 @@ const bool validate_token(const char ** p_token, const char ** p_public_key, cha
  * @param p_retVal pointer on the return value, an array of char *. Each string contains a diffrent role
  * @param nretVal pointer on the number of values in the array of char *
  * @return true if succeeded, false otherwise
- * p_retval will be modified and will need to be freeed
+ * Clean with cleanupArray
 */
 const bool parse_role_claims(const char **p_claims, const char *origin, char ***p_retVal, int *nretVal);
+
+void cleanupArray(char ** array, int n);
 #endif /* KC_AUTH_H */
