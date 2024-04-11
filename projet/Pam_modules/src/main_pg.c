@@ -76,33 +76,37 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 		return PAM_PERM_DENIED;
 	}
 
-
-
 	char *access_token;
-	char *id_token;
-	char *refresh_token;
-
 	/* Asking the application for a password */
 	pam_get_data(handle, "access_token", (const void **)&access_token);
 	// Get JWT from the access_token and validate its signature
 
-	
-	// // jwt_t *jwt = jwt_decode(id_token);
-	// if (jwt == NULL)
-	// {
-	// 	fprintf(stderr, "Can't get id_token");
-	// 	return PAM_PERM_DENIED;
-	// }
-	if (authentification_utilisateur(username, password, &access_token, &refresh_token, &id_token))
+    char *pubkey;
+	bool success_getting_pk = getpubkey(&pubkey);
+    if (success_getting_pk)
+    {
+        printf("Clé publique récupérée dans le main\n");
+        printf("La clée publique juste là %s \n", pubkey);
+    }
+    else
+    {
+        printf("Clé publique non récupérée\n");
+        logger("test", "clé publique non récupérée");
+    }
+    char *claim = "resource_access";
+    char token_user;
+    bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
+    if (!succes_token_validation)
+    {
+		logger("Auth token","TOKEN NOT VALIDATED")
+	}
+	if ()
 	{ // Authenticated
 		logger("sm authenticate good", username);
 		printf("Welcome, %s\n", username);
 
 		// set the user env and tokens
 		pam_set_item(handle, PAM_USER, username);
-		pam_set_data(handle, "access_token", access_token, cleanup_pointer);
-		pam_set_data(handle, "id_token", id_token, cleanup_pointer);
-		pam_set_data(handle, "refresh_token", refresh_token, cleanup_pointer);
 
 		return PAM_SUCCESS;
 	}

@@ -16,7 +16,7 @@ Vérif token ->
 select 'admin' from information_schema.role_table_grants WHERE grantee='firstuser';
 chema de vérification si un utilisateur possède le role admin
 
-Donner un role groupe admin à un utilisateur : 
+Donner un role admin à un utilisateur : 
 
     GRANT admin1 TO firstuser;
 
@@ -24,8 +24,13 @@ Permissions
 
     SELECT * FROM pg_roles WHERE rolname='firstuser';
 
+Les roles d'un utilisateur firstuser : 
+
+    SELECT rolname FROM pg_roles WHERE pg_has_role('firstuser',oid,'member');
 
 Attention : 
 
 Tel que spécifié [ici](https://www.postgresql.org/docs/current/role-membership.html), les attributs : LOGIN, SUPERUSER, CREATEDB et CREATEROLE ne s'héritent pas.
 Les utilisteurs héritent justent des BBDs qui appartiennent au role. 
+
+sudo dnf install libpq-devel.x86_64

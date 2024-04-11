@@ -8,6 +8,7 @@
 #include "../include/jsmn.h"
 #include "../src/logger.c"
 #include "../src/kc_auth.c"
+// #include <libpq-dev.h>
 
 // #define CONFIG_FILE "../kc_auth.conf" // Don't forget to include define config file
 
@@ -95,27 +96,33 @@ int main()
         logger("test", "clé publique non récupérée");
     }
     char *claim = "resource_access";
-    bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim);
+    char token_user;
+    bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
     if (succes_token_validation)
     {
         printf("Jeton validé avec success\n");
+        printf("The token user is %s\n", token_user);
         printf("The claim searched %s \n", claim);
         if (claim != NULL)
         {
-            char ** list_roles;
+            char **list_roles;
             int nroles;
-            parse_role_claims((const char **) &claim, (const char *) CLIENT_ID, &list_roles, &nroles);
-            for(int i =0; i < nroles; i=i+1){
-                printf("Role : %s\n",list_roles[i]);
+            bool success_parse = parse_role_claims((const char **)&claim, (const char *)CLIENT_ID, &list_roles, &nroles);
+            if (success_parse)
+            {
+                printf("sucess parsing answers");
+                for (int i = 0; i < nroles; i = i + 1)
+                {
+                    printf("Role n %d: %s\n", nroles, list_roles[i]);
+                }
+                cleanupArray(list_roles, nroles);
             }
-            cleanupArray(list_roles,nroles);
         }
     }
     else
     {
         printf("Erreur dans la validation du jeton donné");
     }
-
     free(access_token);
     free(id_token);
     free(refresh_token);

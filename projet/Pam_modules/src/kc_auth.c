@@ -493,7 +493,7 @@ const bool getpubkey(char **p_public_key)
     return success;
 }
 
-const bool validate_token(const char **p_token, const char **p_public_key, char **claim)
+const bool validate_token(const char **p_token, const char **p_public_key, char **claim, char *username_in_token)
 {
 
     bool success = 0;
@@ -530,9 +530,12 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
         goto finish;
     }
     // fprintf(stderr, "access_token is authentic! sub: %s\n", jwt_get_grant(jwt, "sub"));
+    username_in_token = jwt_get_grant(jwt, "preferred_username");
+    printf("username of the token user %s \n", username_in_token);
     // jwt_dump_fp(jwt, stdout, 1);
     char *jwt_str = jwt_dump_str(jwt, 0);
-
+    printf("%s", jwt_str);
+    free(jwt_str);
     success = 1;
     *claim = jwt_get_grants_json(jwt, *claim);
 
@@ -582,8 +585,10 @@ const bool parse_role_claims(const char **p_claims, const char *origin, char ***
     }
     return success;
 }
-void cleanupArray(char ** array, int n){
-    for(int i =0;i<n;i++){
+void cleanupArray(char **array, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
         free(array[i]);
     }
     free(array);
