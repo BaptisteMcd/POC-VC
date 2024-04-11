@@ -8,9 +8,8 @@
 #include "../include/jsmn.h"
 #include "../src/logger.c"
 #include "../src/kc_auth.c"
-#include <jwt.h>
 
-#define CONFIG_FILE "../kc_auth.conf" // Don't forget to include define config file
+// #define CONFIG_FILE "../kc_auth.conf" // Don't forget to include define config file
 
 int main()
 {
@@ -89,74 +88,36 @@ int main()
     {
         printf("Clé publique récupérée dans le main\n");
         printf("La clée publique juste là %s \n", pubkey);
-        asprintf(&pubkey, "%s", pubkey);
-        // "-----BEGIN PUBLIC KEY-----\n"+r_json['public_key']+"\n-----END PUBLIC KEY-----"
-        // concat begin and end of pubkey to PEM format
-        char *begin = "-----BEGIN PUBLIC KEY-----\n";
-        char *end = "\n-----END PUBLIC KEY-----";
-        char *tmp = malloc(strlen(pubkey) + strlen(begin) + strlen(end) + 1);
-        strcpy(tmp, begin);
-        strcat(tmp, pubkey);
-        strcat(tmp, end);
-        free(pubkey);
-        pubkey = tmp;
-        
     }
     else
     {
         printf("Clé publique non récupérée\n");
         logger("test", "clé publique non récupérée");
     }
-
-    printf("\n\n");
-    int exit_status = 0;
-    // Validate access_token
-    jwt_t *jwt = NULL;
-    jwt_alg_t opt_alg = JWT_ALG_RS256;
-    jwt_valid_t *jwt_valid;
-    int ret = 0;
-
-    /* Setup validation */
-    ret = jwt_valid_new(&jwt_valid, opt_alg);
-    if (ret != 0 || jwt_valid == NULL)
+    char *claim = "resource_access";
+    bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim);
+    if (succes_token_validation)
     {
-        fprintf(stderr, "failed to allocate jwt_valid\n");
-        goto finish_valid;
+        printf("Jeton validé avec success\n");
+        printf("The claim searched %s \n", claim);
+        if (claim != NULL)
+        {
+            char ** list_roles;
+            int nroles;
+            parse_role_claims((const char **) &claim, (const char *) CLIENT_ID, &list_roles, &nroles);
+            for(int i =0; i < nroles; i=i+1){
+                printf("Role : %s\n",list_roles[i]);
+            }
+        }
+    }
+    else
+    {
+        printf("Erreur dans la validation du jeton donné");
     }
 
-    jwt_valid_set_headers(jwt_valid, 1);
-    jwt_valid_set_now(jwt_valid, time(NULL));
-
-    /* Decode access_token */
-    ret = jwt_decode(&jwt, access_token, pubkey, strlen(pubkey));
-    if (ret != 0 || jwt == NULL)
-    {
-        fprintf(stderr, "invalid access_token\n");
-        exit_status = 1;
-        goto finish;
-    }
-
-    fprintf(stderr, "access_token decoded successfully!\n");
-
-    if (jwt_validate(jwt, jwt_valid) != 0)
-    {
-        jwt_dump_fp(jwt, stderr, 1);
-        exit_status = 1;
-        goto finish;
-    }
-
-    fprintf(stderr, "access_token is authentic! sub: %s\n", jwt_get_grant(jwt, "sub"));
-    printf("access_token is authentic! sub: %s\n", jwt_get_grant(jwt, "sub"));
-    jwt_dump_fp(jwt, stdout, 1);
-
-finish:
-    jwt_free(jwt);
-finish_valid:
-    jwt_valid_free(jwt_valid);
-
-    free(pubkey);
     free(access_token);
     free(id_token);
     free(refresh_token);
+    free(pubkey);
     return valid;
 }

@@ -38,6 +38,37 @@ const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *
 */
 const bool deconnection(const char ** p_access_token, const char ** p_id_token);
 
-const bool getpubkey(char **public_key);
 
+
+/**
+ * Fonction to get the public key of the keycloak server
+ * @param p_public_key pointer on char * : pubkey variable
+ * @return true if succeeded, false otherwise
+ * Will modify the values of p_public_key.
+ * Public key is written in PEM format.
+*/
+const bool getpubkey(char **p_public_key);
+
+
+/**
+ * Fonction to validate a JWT token using jwt.h library
+ * @param p_token
+ * @param p_public_key
+ * @param p_ressource_claims pointer on char * representing the ressource claim to check, 
+ * @return true if token is valid false otherwise
+ * @return The claim will be replaced by the value of the claim itself, null if it doesn't exist 
+*/
+const bool validate_token(const char ** p_token, const char ** p_public_key, char ** p_ressource_claims);
+
+
+/**
+ * Fonction to parse role claims from an origin
+ * @param p_claims 
+ * @param origin
+ * @param p_retVal pointer on the return value, an array of char *. Each string contains a diffrent role
+ * @param nretVal pointer on the number of values in the array of char *
+ * @return true if succeeded, false otherwise
+ * p_retval will be modified and will need to be freeed
+*/
+const bool parse_role_claims(const char **p_claims, const char *origin, char ***p_retVal, int *nretVal);
 #endif /* KC_AUTH_H */

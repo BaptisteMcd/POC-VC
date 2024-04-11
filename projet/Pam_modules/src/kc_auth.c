@@ -9,6 +9,7 @@
 #include "../include/jsmn.h"
 // #include "kc_auth.h"
 #define CONFIG_FILE "/etc/kc_auth.conf"
+#include <jwt.h>
 
 // #include <libconfig.h> ?
 //  TODO : AJOUTER UN FICHIER DE CONFIG KC DANS ETC
@@ -481,14 +482,103 @@ const bool getpubkey(char **p_public_key)
             {
                 if (jsoneq(chunk.memory, &t[i], "public_key") == 0)
                 { // Found pubkey
-                    asprintf(p_public_key, "%.*s", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
+                    asprintf(p_public_key, "-----BEGIN PUBLIC KEY-----\n%.*s\n-----END PUBLIC KEY-----", t[i + 1].end - t[i + 1].start, chunk.memory + t[i + 1].start);
                     success = true;
                     break;
                 }
             }
         }
     }
-
     free(chunk.memory);
+    return success;
+}
+
+const bool validate_token(const char **p_token, const char **p_public_key, char **claim)
+{
+
+    bool success = 0;
+    // Validate access_token
+    jwt_t *jwt = NULL;
+    jwt_alg_t opt_alg = JWT_ALG_RS256;
+    jwt_valid_t *jwt_valid;
+    int ret = 0;
+
+    /* Setup validation */
+    ret = jwt_valid_new(&jwt_valid, opt_alg);
+    if (ret != 0 || jwt_valid == NULL)
+    {
+        fprintf(stderr, "failed to allocate jwt_valid\n");
+        goto finish_valid;
+    }
+
+    jwt_valid_set_headers(jwt_valid, 1);
+    jwt_valid_set_now(jwt_valid, time(NULL));
+
+    /* Decode access_token */
+    ret = jwt_decode(&jwt, *p_token, *p_public_key, strlen(*p_public_key));
+    if (ret != 0 || jwt == NULL)
+    { // working access and id but not refresh
+        fprintf(stderr, "invalid access_token\n");
+        goto finish;
+    }
+
+    // fprintf(stderr, "access_token decoded successfully!\n");
+
+    if (jwt_validate(jwt, jwt_valid) != 0)
+    {
+        jwt_dump_fp(jwt, stderr, 1);
+        goto finish;
+    }
+    // fprintf(stderr, "access_token is authentic! sub: %s\n", jwt_get_grant(jwt, "sub"));
+    // jwt_dump_fp(jwt, stdout, 1);
+    char *jwt_str = jwt_dump_str(jwt, 0);
+
+    success = 1;
+    *claim = jwt_get_grants_json(jwt, *claim);
+
+finish:
+    jwt_free(jwt);
+finish_valid:
+    jwt_valid_free(jwt_valid);
+
+    return success;
+}
+
+const bool parse_role_claims(const char **p_claims, const char *origin, char ***p_retVal, int *nretVal)
+{
+    jsmn_parser p;
+    jsmntok_t t[64];
+    jsmn_init(&p);
+    int r = jsmn_parse(&p, *p_claims, strlen(*p_claims), t, sizeof(t) / sizeof(t[0]));
+    bool success = false;
+    if (r < 0)
+    {
+        printf("Failed to parse JSON performing request to check user existance : %d\n", r);
+        logger("Existance utilisateur", "Failed to parse JSON");
+    }
+    else
+    { // Parsing JSON
+        for (int i = 1; i < r; i++)
+        {
+            if (jsoneq(*p_claims, &t[i], "roles") == 0)
+            { // Found Role identifier
+                if (t[i + 1].type != JSMN_ARRAY || jsoneq(*p_claims, &t[i - 2], CLIENT_ID) != 0)
+                { // wrong place or not the targeted origin
+                    continue;
+                }
+                success = true;
+                *nretVal = t[i + 1].size;
+                *p_retVal = (char **)malloc(sizeof(char *) * (*nretVal)); // Allocate the array of pointers of chars
+                for (int j = 0; j < *nretVal; j++)
+                {
+                    jsmntok_t *g = &t[i + j + 2];
+                    printf(" *%.*s\n", g->end - g->start, *p_claims + g->start);
+                    asprintf(p_retVal[j], "%.*s", g->end - g->start, *p_claims + g->start); // allocate space for char *
+                }
+                success = true;
+                break; // one and only one source of role at a time
+            }
+        }
+    }
     return success;
 }
