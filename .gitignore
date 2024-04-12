@@ -173,3 +173,7 @@ cython_debug/
 
 projet/Client_OIDC_Py/__pycache__/config.cpython-312.pyc
 projet/Pam_module/valgrind-out.txt
+projet/Pam_modules/testing.txt
+installation/keycloak/data/h2/keycloakdb.lock.db
+installation/keycloak/data/h2/keycloakdb.mv.db
+installation/keycloak/data/h2/keycloakdb.trace.db
