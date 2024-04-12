@@ -17,7 +17,11 @@
 #define MAX_USERFILE_SIZE 1024
 #define USERSFILE "users"
 
-void cleanup_pointer(pam_handle_t *handle, void *data, int error_status) { free(data); } // Cleanup function
+void cleanup_pointer(pam_handle_t *handle, void *data, int error_status)
+{
+	// printf("cleanup_pointer shunt\n"); // testing
+	free(data);
+} // Cleanup function
 
 void change_pass(const char *, const char *);
 
@@ -97,7 +101,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 	char *access_token;
 	char *id_token;
 	char *refresh_token;
-	
+
 	if (authentification_utilisateur(username, password, &access_token, &refresh_token, &id_token))
 	{ // Authenticated
 		logger("sm authenticate good", username);
@@ -108,6 +112,15 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 		pam_set_data(handle, "access_token", access_token, cleanup_pointer);
 		pam_set_data(handle, "id_token", id_token, cleanup_pointer);
 		pam_set_data(handle, "refresh_token", refresh_token, cleanup_pointer);
+
+		pam_set_item(handle, PAM_AUTHTOK, access_token);
+		char *key_val;
+
+		asprintf(&key_val, "access_token=%s", access_token);
+		pam_putenv(handle, key_val);
+
+		char *acc_from_env = (char *)pam_getenv(handle, "access_token");
+		printf("access_token from env %s\n", acc_from_env);
 
 		return PAM_SUCCESS;
 	}
@@ -158,41 +171,36 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc,
 	printf("pam_sm_setcred\n");
 	logger("pam_sm_setcred", "username to be defined");
 
-	/* Environment variable name */
-	const char *env_var_name = "USER_FULL_NAME";
-
-	/* User full name */
-	const char *name = "John Smith";
-
-	/* String in which we write the assignment expression */
-	char env_assignment[100];
-
-	/* If application asks for establishing credentials */
-	if (flags & PAM_ESTABLISH_CRED)
-		/* We create the assignment USER_FULL_NAME=John Smith */
-		sprintf(env_assignment, "%s=%s", env_var_name, name);
-	/* If application asks to delete credentials */
-	else if (flags & PAM_DELETE_CRED)
-		/* We create the assignment USER_FULL_NAME, withouth equal,
-		 * which deletes the environment variable */
-		sprintf(env_assignment, "%s", env_var_name);
-
-	/* In this case credentials do not have an expiry date,
-	 * so we won't handle PAM_REINITIALIZE_CRED */
-
-	pam_putenv(pamh, env_assignment);
+	// pam_putenv(pamh, env_assignment);
 	return PAM_SUCCESS;
 }
 
 PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc,
 								   const char **argv)
 {
-	const char *username;
 	/* Get the username from PAM */
+	const char *username;
 	pam_get_item(pamh, PAM_USER, (const void **)&username);
-	printf("pam_sm_open_session for user %s \n", username);
 
 	logger("pam_sm_open_session", username);
+	printf("Opening session for user %s...\n", username);
+
+	char path_tokens[512];
+	// sprintf(path_tokens, "/home/%s/.tokens", username);
+	sprintf(path_tokens, "/tmp/.tokens"); //only testing
+
+	// Retrieve the previously set tokens and write them to a file
+	char *access_token;
+	char *id_token;
+	char *refresh_token;
+	pam_get_data(pamh, "access_token", (const void **)&access_token);
+	pam_get_data(pamh, "id_token", (const void **)&id_token);
+	pam_get_data(pamh, "refresh_token", (const void **)&refresh_token);
+	printf("access_token : %s\n", access_token);
+	printf("id_token : %s\n", id_token);
+	printf("refresh_token : %s\n", refresh_token);
+	write_tokens(path_tokens, access_token, id_token, refresh_token);
+
 	return PAM_SUCCESS;
 }
 
@@ -222,8 +230,6 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc,
 		printf("Déconnexion échouée\n");
 		logger("Déconnexion échouée", username);
 	}
-
-
 	logger("pam_sm_close_session", username);
 	return PAM_SUCCESS;
 }

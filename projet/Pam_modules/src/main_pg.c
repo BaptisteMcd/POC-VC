@@ -18,7 +18,11 @@
 #define MAX_USERFILE_SIZE 1024
 #define USERSFILE "users"
 
-void cleanup_pointer(pam_handle_t *handle, void *data, int error_status) { free(data); } // Cleanup function
+void cleanup_pointer(pam_handle_t *handle, void *data, int error_status)
+{
+	// printf("cleanup_pointer shunt\n");
+	// free(data);
+} // Cleanup function
 
 void change_pass(const char *, const char *);
 
@@ -62,9 +66,6 @@ void change_pass(const char *username, const char *password)
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 								   const char **argv)
 {
-	logger("pam_sm_authenticate", "username to be defined");
-	printf("pam_sm_authenticate\n");
-
 	int pam_code;
 	const char *username = NULL;
 	const char *password = NULL;
@@ -75,32 +76,73 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 		fprintf(stderr, "Can't get username");
 		return PAM_PERM_DENIED;
 	}
+	logger("pam_sm_authenticate pg pam", username);
 
-	char *access_token;
-	/* Asking the application for a password */
-	pam_get_data(handle, "access_token", (const void **)&access_token);
-	// Get JWT from the access_token and validate its signature
+	char path_tokens[512];
+	// sprintf(path_tokens, "/home/%s/.tokens", username);
+	sprintf(path_tokens, "/tmp/.tokens"); // testing
 
-    char *pubkey;
-	bool success_getting_pk = getpubkey(&pubkey);
-    if (success_getting_pk)
-    {
-        printf("Clé publique récupérée dans le main\n");
-        printf("La clée publique juste là %s \n", pubkey);
-    }
-    else
-    {
-        printf("Clé publique non récupérée\n");
-        logger("test", "clé publique non récupérée");
-    }
-    char *claim = "resource_access";
-    char token_user;
-    bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
-    if (!succes_token_validation)
-    {
-		logger("Auth token","TOKEN NOT VALIDATED")
+	// FILE *pConfigFile = fopen(path_tokens, "r");
+	FILE *pTokensFile = fopen(path_tokens, "r"); // testing
+	if (pTokensFile == NULL)
+	{
+		printf("Erreur lors de l'ouverture du fichier .tokens\n");
+		logger("test", "Erreur lors de l'ouverture du fichier .tokens");
+		return PAM_PERM_DENIED;
 	}
-	if ()
+
+	logger("pam_sm_authenticate pTokensFile", "pTokensFile");
+	char *access_token;
+	char *id_token;
+	char *refresh_token;
+	access_token = read_conf(pTokensFile, "id_token");
+	id_token = read_conf(pTokensFile, "access_token");
+	refresh_token = read_conf(pTokensFile, "refresh_token");
+	fclose(pTokensFile);
+	
+	logger("pg auth check access_token :", access_token);
+	logger("pg auth check id_token :", id_token);
+	logger("pg auth check refresh_token :", refresh_token);
+	if (access_token == NULL || id_token == NULL || refresh_token == NULL)
+	{
+		printf("Erreur lors de la lecture des tokens\n");
+		logger("test", "Erreur lors de la lecture des tokens");
+		return PAM_PERM_DENIED;
+	}
+	return PAM_SUCCESS; // shuntage
+	logger("pg auth env list", *pam_getenvlist(handle));
+
+	char *pubkey;
+	bool success_getting_pk = getpubkey(&pubkey);
+	if (success_getting_pk)
+	{
+		printf("Clé publique récupérée dans le main\n");
+		printf("La clée publique juste là %s \n", pubkey);
+	}
+	else
+	{
+		printf("Clé publique non récupérée\n");
+		logger("test", "clé publique non récupérée");
+	}
+	char *claim = "resource_access";
+
+	char token_user;
+	bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
+	if (!succes_token_validation)
+	{
+		logger("Auth token", "TOKEN NOT VALIDATED");
+	}
+	if (verif_existance_utilisateur(username, (const char **)&access_token))
+	{
+		printf("Utilisateur trouvé\n");
+		logger("test", "verif user fonctionnelle");
+	}
+	else
+	{
+		printf("Utilisateur non trouvé\n");
+		logger("test", "verif user non fonctionnelle");
+	}
+	if (true)
 	{ // Authenticated
 		logger("sm authenticate good", username);
 		printf("Welcome, %s\n", username);
@@ -156,30 +198,8 @@ PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc,
 {
 	printf("pam_sm_setcred\n");
 	logger("pam_sm_setcred pg pam", "username to be defined");
+	// Set the credentials to share with other modules
 
-	/* Environment variable name */
-	const char *env_var_name = "USER_FULL_NAME";
-
-	/* User full name */
-	const char *name = "John Smith";
-
-	/* String in which we write the assignment expression */
-	char env_assignment[100];
-
-	/* If application asks for establishing credentials */
-	if (flags & PAM_ESTABLISH_CRED)
-		/* We create the assignment USER_FULL_NAME=John Smith */
-		sprintf(env_assignment, "%s=%s", env_var_name, name);
-	/* If application asks to delete credentials */
-	else if (flags & PAM_DELETE_CRED)
-		/* We create the assignment USER_FULL_NAME, withouth equal,
-		 * which deletes the environment variable */
-		sprintf(env_assignment, "%s", env_var_name);
-
-	/* In this case credentials do not have an expiry date,
-	 * so we won't handle PAM_REINITIALIZE_CRED */
-
-	pam_putenv(pamh, env_assignment);
 	return PAM_SUCCESS;
 }
 
@@ -221,7 +241,6 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc,
 		printf("Déconnexion échouée\n");
 		logger("Déconnexion échouée", username);
 	}
-
 
 	logger("pam_sm_close_session pg pam", username);
 	return PAM_SUCCESS;

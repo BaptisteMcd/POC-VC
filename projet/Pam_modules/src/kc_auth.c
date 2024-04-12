@@ -65,14 +65,76 @@ char *read_conf(FILE *file, char const *desired_name)
 {
     char name[128];
     char val[128];
-    while (fscanf(file, "%127[^=]=%127[^\n]%*c", name, val) == 2)
+    while (fscanf(file, "%127[^=]=%127[^\n]%*[\n]", name, val) == 2)
     {
-        if (0 == strcmp(name, desired_name))
+        if (strcmp(name, desired_name) == 0)
         {
             return strdup(val);
         }
     }
+    if (feof(file))
+    {
+        fprintf(stderr, "Error: Token '%s' not found in configuration file.\n", desired_name);
+        logger("read_conf", "Token not found in configuration file");
+    }
+    else if (ferror(file))
+    {
+        perror("Error reading configuration file");
+        logger("read_conf", "Error reading configuration file");
+    }
+    logger("read_conf", "Error reading configuration file (unknown error)");
     return NULL;
+}
+
+const bool write_tokens(const char *filename, const char *access_token, const char *refresh_token, const char *id_token)
+{
+    // Open the file in write mode, which will delete all existing content
+    FILE *file;
+    file = fopen(filename, "w");
+    if (file == NULL)
+    {
+        printf("Error opening file for writing\n");
+        logger("write_tokens", "Error opening file for writing");
+        return false;
+    }
+    fprintf(file, "access_token=%s\n", access_token);
+    fprintf(file, "refresh_token=%s\n", refresh_token);
+    fprintf(file, "id_token=%s\n", id_token);
+
+    fclose(file);
+    return true;
+}
+const bool read_tokens(const char *filename, char **access_token, char **refresh_token, char **id_token)
+{
+    FILE *file;
+    file = fopen(filename, "r");
+    if (file == NULL)
+    {
+        printf("Error opening file for reading\n");
+        logger("read_tokens", "Error opening file for reading");
+        return false;
+    }
+
+    char name[128];
+    char val[2048];
+    while (fscanf(file, "%127[^=]=%2047[^\n]%*[\n]", name, val) == 2)
+    {
+        if (strcmp(name, "access_token") == 0)
+        {
+            *access_token = strdup(val);
+        }
+        else if (strcmp(name, "refresh_token") == 0)
+        {
+            *refresh_token = strdup(val);
+        }
+        else if (strcmp(name, "id_token") == 0)
+        {
+            *id_token = strdup(val);
+        }
+    }
+
+    fclose(file);
+    return true;
 }
 
 __attribute__((constructor)) void init(void)
@@ -493,7 +555,7 @@ const bool getpubkey(char **p_public_key)
     return success;
 }
 
-const bool validate_token(const char **p_token, const char **p_public_key, char **claim, char *username_in_token)
+const bool validate_token(const char **p_token, const char **p_public_key, char **claim, char **p_username_in_token)
 {
 
     bool success = 0;
@@ -530,8 +592,9 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
         goto finish;
     }
     // fprintf(stderr, "access_token is authentic! sub: %s\n", jwt_get_grant(jwt, "sub"));
-    username_in_token = jwt_get_grant(jwt, "preferred_username");
-    printf("username of the token user %s \n", username_in_token);
+    // username_in_token = (char *)jwt_get_grant(jwt, "preferred_username");
+    asprintf(p_username_in_token, "%s", jwt_get_grant(jwt, "preferred_username"));
+    printf("username of the token user %s \n", *p_username_in_token);
     // jwt_dump_fp(jwt, stdout, 1);
     char *jwt_str = jwt_dump_str(jwt, 0);
     printf("%s", jwt_str);
@@ -567,8 +630,10 @@ const bool parse_role_claims(const char **p_claims, const char *origin, char ***
             { // Found Role identifier
                 if (t[i + 1].type != JSMN_ARRAY || jsoneq(*p_claims, &t[i - 2], CLIENT_ID) != 0)
                 { // wrong place or not the targeted origin
+                    printf("Wrong place or not the targeted origin\n");
                     continue;
                 }
+                printf("Found the right place\n");
                 success = true;
                 *nretVal = t[i + 1].size;
                 *p_retVal = (char **)malloc(sizeof(char *) * (*nretVal)); // Allocate the array of pointers of chars
@@ -576,7 +641,8 @@ const bool parse_role_claims(const char **p_claims, const char *origin, char ***
                 {
                     jsmntok_t *g = &t[i + j + 2];
                     printf(" *%.*s\n", g->end - g->start, *p_claims + g->start);
-                    asprintf(p_retVal[j], "%.*s", g->end - g->start, *p_claims + g->start); // allocate space for char *
+                    // allocate and put in the array of pointer a pointer to the allocated array of char
+                    asprintf(&(*p_retVal)[j], "%.*s", g->end - g->start, *p_claims + g->start);
                 }
                 success = true;
                 break; // one and only one source of role at a time

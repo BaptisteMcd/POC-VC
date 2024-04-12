@@ -20,7 +20,7 @@ int main()
     char *refresh_token;
     char *id_token;
 
-    FILE *f = fopen(CONFIG_FILE, "r");
+    FILE *f = fopen("/etc/kc_auth.conf", "r");
     if (f == NULL)
     {
         printf("Erreur lors de l'ouverture du fichier de configuration\n");
@@ -56,8 +56,8 @@ int main()
         printf("Utilisateur non trouvé\n");
         logger("test", "verif user non fonctionnelle");
     }
-    free(access_token);
-    free(id_token);
+    // free(access_token);
+    // free(id_token);
 
     bool auth = authentification_utilisateur("firstuser", "test", &access_token, &refresh_token, &id_token);
     if (auth)
@@ -70,7 +70,12 @@ int main()
         printf("Authentification échouée\n");
         logger("test", "authentification échouée");
     }
+    printf("tokens before writing them to conf file\n");
+    printf("access_token : %s\n", access_token);
+    printf("id_token : %s\n", id_token);
+    printf("refresh_token : %s\n", refresh_token);
 
+    write_tokens("/tmp/.tokens_test", access_token, id_token, refresh_token);
     bool deco = deconnection((const char **)&access_token, (const char **)&refresh_token);
     if (deco)
     {
@@ -83,12 +88,40 @@ int main()
         logger("test", "déconnexion échouée");
     }
 
+    char path_tokens[512];
+    // sprintf(path_tokens, "/home/%s/.tokens", username);
+    sprintf(path_tokens, "/tmp/.tokens_test"); // testing
+
+    // FILE *pConfigFile = fopen(path_tokens, "r");
+    FILE *pTokensFile = fopen(path_tokens, "r"); // testing
+    if (pTokensFile == NULL)
+    {
+        printf("Erreur lors de l'ouverture du fichier .tokens\n");
+        logger("test", "Erreur lors de l'ouverture du fichier .tokens");
+        return 0;
+    }
+    logger("pam_sm_authenticate pTokensFile", "pTokensFile");
+    char *access_token2;
+    char *id_token2;
+    char *refresh_token2;
+    read_tokens("/tmp/.tokens_test", &access_token2, &id_token2, &refresh_token2);
+    fclose(pTokensFile);
+
+    printf("token access %s \n", access_token2);
+    printf("token id %s \n", id_token2);
+    printf("token %s \n", refresh_token2);
+    if (access_token == NULL || id_token == NULL || refresh_token == NULL)
+    {
+        printf("Erreur lors de la lecture des tokens\n");
+    }
+    printf("Les jetons on été tous lu avec success\n");
+
     char *pubkey;
     bool success_getting_pk = getpubkey(&pubkey);
     if (success_getting_pk)
     {
         printf("Clé publique récupérée dans le main\n");
-        printf("La clée publique juste là %s \n", pubkey);
+        // printf("La clée publique juste là %s \n", pubkey);
     }
     else
     {
@@ -96,26 +129,29 @@ int main()
         logger("test", "clé publique non récupérée");
     }
     char *claim = "resource_access";
-    char token_user;
+    char *token_user;
     bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
     if (succes_token_validation)
     {
         printf("Jeton validé avec success\n");
         printf("The token user is %s\n", token_user);
-        printf("The claim searched %s \n", claim);
         if (claim != NULL)
         {
+            printf("The claim searched %s \n", claim);
             char **list_roles;
             int nroles;
+            printf("Parsing roles claims\n");
             bool success_parse = parse_role_claims((const char **)&claim, (const char *)CLIENT_ID, &list_roles, &nroles);
             if (success_parse)
             {
                 printf("sucess parsing answers");
                 for (int i = 0; i < nroles; i = i + 1)
                 {
-                    printf("Role n %d: %s\n", nroles, list_roles[i]);
+                    printf("Role n %d: %s\n", i, list_roles[i]);
                 }
                 cleanupArray(list_roles, nroles);
+            }else{
+                printf("No corresponding claims found\n");
             }
         }
     }

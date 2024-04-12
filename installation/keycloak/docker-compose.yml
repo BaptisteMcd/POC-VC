@@ -1,0 +1,15 @@
+# ignored options for 'openldap'
+# --detach
+# ne pas utiliser
+services:
+    keycloak:
+        container_name: kc
+        command: ["start-dev"]
+        ports:
+            - 8080:8080
+        environment:
+            - KEYCLOAK_ADMIN=admin
+            - KEYCLOAK_ADMIN_PASSWORD=admin
+        volumes:
+            - ./data:/opt/keycloak/data/
+        image: quay.io/keycloak/keycloak:22.0.5

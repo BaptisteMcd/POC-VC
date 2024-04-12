@@ -55,7 +55,7 @@ const bool getpubkey(char **p_public_key);
  * @return true if token is valid false otherwise
  * @return The claim will be replaced by the value of the claim itself, null if it doesn't exist
  */
-const bool validate_token(const char **p_token, const char **p_public_key, char **p_ressource_claims, char *username_in_token);
+const bool validate_token(const char **p_token, const char **p_public_key, char **p_ressource_claims, char **p_username_in_token);
 
 /**
  * Fonction to parse role claims from an origin
@@ -68,5 +68,16 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
  */
 const bool parse_role_claims(const char **p_claims, const char *origin, char ***p_retVal, int *nretVal);
 
+
+/**
+ * Fonction to write tokens in a file
+ * @param filename Name of the file
+ * @param access_token the access token
+ * @param refresh_token the refresh token
+ * @param id_token the id token
+ * @return true if succeeded, false otherwise
+*/
+const bool write_tokens(const char * filename, const char *access_token, const char *refresh_token, const char *id_token);
+char * read_conf(FILE *file, char const *desired_name);
 void cleanupArray(char **array, int n);
 #endif /* KC_AUTH_H */
