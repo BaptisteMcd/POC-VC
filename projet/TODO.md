@@ -58,3 +58,20 @@ Objectif pour le 25 : déterminer de quoi a t on besoin sur le serveur "client" 
 
 ## Reproductibilité / Documentation
   * Automation et reproducibilité de tout (installation, compilation etc) + rédaction d'une ébauche de doc pour chaque composant.
+  
+
+# 14/04 - 24/04
+
+## Reliquat
+
+ * Liaison PGSQL - Session UNIX
+
+## A faire
+
+Faire une étude des composants nécessaires pour créer un laboratoire pertinent pour l'usage de VCs en gardant à l'esprit notre scénario "bouchon" à savoir un utilisateur s'authentifie avec ses VCs et accède à base a une base PGSQL.
+
+Cela signifie que nous avons besoin au moins d'un issuer/émetteur de VCs, et éventuellement d'un "client" mobile.
+
+L'attendu est de me présenter un powerpoint de X slides avec une première partie "vue haute" (quels composants remplissent quel rôle), puis une vue technique avec les échanges détaillés de chacun des composants entre eux lors du scénario d'une authentification via via plugin KC (cf supra).
+
+Ne pas oublier que si il y'a possibilité de chuinter pour le moment la partie blockchain, cela nous arrange.
