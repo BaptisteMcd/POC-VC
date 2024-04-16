@@ -435,7 +435,7 @@ const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *
 }
 
 const bool deconnection(const char **p_access_token, const char **p_refresh_token)
-{ // TOFINISH
+{ 
     CURL *curl;
     CURLcode res;
     curl = curl_easy_init();
@@ -557,7 +557,7 @@ const bool getpubkey(char **p_public_key)
 
 const bool validate_token(const char **p_token, const char **p_public_key, char **claim, char **p_username_in_token)
 {
-
+    logger("token validation", "start");
     bool success = 0;
     // Validate access_token
     jwt_t *jwt = NULL;
@@ -566,6 +566,7 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
     int ret = 0;
 
     /* Setup validation */
+    logger("token validation", "entering validation");
     ret = jwt_valid_new(&jwt_valid, opt_alg);
     if (ret != 0 || jwt_valid == NULL)
     {

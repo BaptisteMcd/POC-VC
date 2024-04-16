@@ -78,12 +78,12 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 	}
 	logger("pam_sm_authenticate pg pam", username);
 
+	// Récupération des jetons
 	char path_tokens[512];
 	// sprintf(path_tokens, "/home/%s/.tokens", username);
 	sprintf(path_tokens, "/tmp/.tokens"); // testing
 
-	// FILE *pConfigFile = fopen(path_tokens, "r");
-	FILE *pTokensFile = fopen(path_tokens, "r"); // testing
+	FILE *pTokensFile = fopen(path_tokens, "r");
 	if (pTokensFile == NULL)
 	{
 		printf("Erreur lors de l'ouverture du fichier .tokens\n");
@@ -95,43 +95,43 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 	char *access_token;
 	char *id_token;
 	char *refresh_token;
-	access_token = read_conf(pTokensFile, "id_token");
-	id_token = read_conf(pTokensFile, "access_token");
-	refresh_token = read_conf(pTokensFile, "refresh_token");
+	read_tokens("/tmp/.tokens", &access_token, &id_token, &refresh_token);
 	fclose(pTokensFile);
-	
-	logger("pg auth check access_token :", access_token);
-	logger("pg auth check id_token :", id_token);
-	logger("pg auth check refresh_token :", refresh_token);
 	if (access_token == NULL || id_token == NULL || refresh_token == NULL)
 	{
 		printf("Erreur lors de la lecture des tokens\n");
 		logger("test", "Erreur lors de la lecture des tokens");
 		return PAM_PERM_DENIED;
 	}
-	return PAM_SUCCESS; // shuntage
-	logger("pg auth env list", *pam_getenvlist(handle));
+	logger("pg auth", "success dans la récupération des jetons");
 
+	// Clé publique à partir du serveur Keycloak
 	char *pubkey;
 	bool success_getting_pk = getpubkey(&pubkey);
-	if (success_getting_pk)
-	{
-		printf("Clé publique récupérée dans le main\n");
-		printf("La clée publique juste là %s \n", pubkey);
-	}
-	else
+	if (!success_getting_pk)
 	{
 		printf("Clé publique non récupérée\n");
-		logger("test", "clé publique non récupérée");
+		logger("pg auth", "clé publique non récupérée");
 	}
-	char *claim = "resource_access";
+	logger("pg auth", "Clé publique récupérée dans le main\n");
 
-	char token_user;
+	// Validation du jeton
+	char *claim = "resource_access";
+	char *token_user;
+	logger("Auth token", "Going into token validation");
 	bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
+	
+	return PAM_SUCCESS;
+	logger("Auth token", "Token in validation");
+
 	if (!succes_token_validation)
 	{
 		logger("Auth token", "TOKEN NOT VALIDATED");
+		return PAM_PERM_DENIED;
 	}
+	logger("auth pg", token_user);
+	return PAM_SUCCESS;
+
 	if (verif_existance_utilisateur(username, (const char **)&access_token))
 	{
 		printf("Utilisateur trouvé\n");

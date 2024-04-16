@@ -79,5 +79,6 @@ const bool parse_role_claims(const char **p_claims, const char *origin, char ***
 */
 const bool write_tokens(const char * filename, const char *access_token, const char *refresh_token, const char *id_token);
 char * read_conf(FILE *file, char const *desired_name);
+const bool read_tokens(const char *filename, char **access_token, char **refresh_token, char **id_token);
 void cleanupArray(char **array, int n);
 #endif /* KC_AUTH_H */

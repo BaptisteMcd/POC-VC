@@ -110,7 +110,7 @@ int main()
     printf("token access %s \n", access_token2);
     printf("token id %s \n", id_token2);
     printf("token %s \n", refresh_token2);
-    if (access_token == NULL || id_token == NULL || refresh_token == NULL)
+    if (access_token2 == NULL || id_token2 == NULL || refresh_token2 == NULL)
     {
         printf("Erreur lors de la lecture des tokens\n");
     }
@@ -130,7 +130,7 @@ int main()
     }
     char *claim = "resource_access";
     char *token_user;
-    bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
+    bool succes_token_validation = validate_token((const char **)&access_token2, (const char **)&pubkey, &claim, &token_user);
     if (succes_token_validation)
     {
         printf("Jeton validé avec success\n");
