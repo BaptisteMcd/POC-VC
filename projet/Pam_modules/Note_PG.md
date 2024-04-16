@@ -34,3 +34,6 @@ Tel que spécifié [ici](https://www.postgresql.org/docs/current/role-membership
 Les utilisteurs héritent justent des BBDs qui appartiennent au role. 
 
 sudo dnf install libpq-devel.x86_64
+
+gcc -fPIC -Wall -shared -o pam_cpgsql.so -Wl,-soname,pam_cpgsql.sqo main_pg.c -lcurl -ljwt
+sudo cp pam_cpgsql.so /lib64/security/pam_cpgsql.so

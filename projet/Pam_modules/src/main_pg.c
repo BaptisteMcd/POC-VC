@@ -121,17 +121,15 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 	logger("Auth token", "Going into token validation");
 	bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
 	
-	return PAM_SUCCESS;
-	logger("Auth token", "Token in validation");
 
 	if (!succes_token_validation)
 	{
 		logger("Auth token", "TOKEN NOT VALIDATED");
 		return PAM_PERM_DENIED;
 	}
-	logger("auth pg", token_user);
+	logger("auth pg jeton valide pour utilisateur : ", token_user);
 	return PAM_SUCCESS;
-
+	
 	if (verif_existance_utilisateur(username, (const char **)&access_token))
 	{
 		printf("Utilisateur trouvé\n");

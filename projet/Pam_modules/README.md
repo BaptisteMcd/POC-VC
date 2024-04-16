@@ -59,6 +59,9 @@ or
 
     gcc -fPIC -Wall -shared -o libnss_pool.so -Wl,-soname,libnss_pool.so libnss_pool.c
 
+  gcc -fPIC -Wall -shared -o pam_cpgsql.so -Wl,-soname,pam_cpgsql.sqo pam_cpgsql.c
+
+
 Copie dans /usr/lib64/ avec le nom en .so.2 : shared object 2.
 
     sudo cp ./libnss_pool.so /usr/lib64/libnss_pool.so.2
@@ -106,3 +109,9 @@ Un pool d'utilisateurs types ?
 
 Je crois que LDAP est bien pour le nss mais pas pour le pam
 http://www.minetti.org/wiki/Linux:Configuration_de_NSS/PAM_pour_une_authentification_via_un_LDAP
+
+
+tentative compilation en static 
+gcc -fPIC -c main_pg.c --static -lcurl -ljwt
+sudo ld -lcurl -ljwt -x --shared -o /lib64/security/pam_cpgsql.so main_pg.o
+sudo ld -lcurl -ljwt -x --shared -o /lib64/security/pam_cpgsql.so main_pg.o ../obj/kc_auth.o ../obj/logger.oq

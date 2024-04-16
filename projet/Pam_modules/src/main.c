@@ -14,9 +14,6 @@
 #include "../include/kc_auth.h"
 // #include "kc_auth.c"
 
-#define MAX_USERFILE_SIZE 1024
-#define USERSFILE "users"
-
 void cleanup_pointer(pam_handle_t *handle, void *data, int error_status)
 {
 	// printf("cleanup_pointer shunt\n"); // testing
@@ -28,38 +25,6 @@ void change_pass(const char *, const char *);
 void change_pass(const char *username, const char *password)
 {
 	// TO REWRITE
-	FILE *f = fopen(USERSFILE, "wr");
-	char content[MAX_USERFILE_SIZE];
-	int pos = 0;
-	bool authenticated = false;
-
-	int filepos = 0;
-
-	int c;
-	/* Reading the file until EOF and filling content */
-	while ((c = fgetc(f)) != EOF)
-	{
-		content[pos++] = c;
-	}
-
-	char *userfield = strtok(content, ":");
-	char *passfield = strtok(NULL, "\n");
-	filepos += strlen(userfield) + strlen(passfield) + 2;
-	while (1)
-	{
-		if (strcmp(username, userfield) == 0 &&
-			strcmp(password, passfield) == 0)
-		{
-			authenticated = true;
-			break;
-		}
-		userfield = strtok(NULL, ":");
-		if (userfield == NULL)
-			break;
-		passfield = strtok(NULL, "\n");
-		if (passfield == NULL)
-			break;
-	}
 }
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,

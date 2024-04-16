@@ -9,7 +9,8 @@
 #include "../include/jsmn.h"
 // #include "kc_auth.h"
 #define CONFIG_FILE "/etc/kc_auth.conf"
-#include <jwt.h>
+#include "jansson.h"
+#include "jwt.h"
 
 // #include <libconfig.h> ?
 //  TODO : AJOUTER UN FICHIER DE CONFIG KC DANS ETC
@@ -435,7 +436,7 @@ const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *
 }
 
 const bool deconnection(const char **p_access_token, const char **p_refresh_token)
-{ 
+{
     CURL *curl;
     CURLcode res;
     curl = curl_easy_init();
@@ -568,6 +569,7 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
     /* Setup validation */
     logger("token validation", "entering validation");
     ret = jwt_valid_new(&jwt_valid, opt_alg);
+    logger("token validation", "validation set");
     if (ret != 0 || jwt_valid == NULL)
     {
         fprintf(stderr, "failed to allocate jwt_valid\n");
@@ -576,16 +578,20 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
 
     jwt_valid_set_headers(jwt_valid, 1);
     jwt_valid_set_now(jwt_valid, time(NULL));
-
+    logger("token validation", "decoding now ...");
     /* Decode access_token */
     ret = jwt_decode(&jwt, *p_token, *p_public_key, strlen(*p_public_key));
+    logger("token validation", "decoding done");
     if (ret != 0 || jwt == NULL)
     { // working access and id but not refresh
+        logger("token validation", "invalid access_token");
         fprintf(stderr, "invalid access_token\n");
         goto finish;
     }
+    logger("token validation", "valid access_token");
 
     // fprintf(stderr, "access_token decoded successfully!\n");
+    logger("token validation", "validating");
 
     if (jwt_validate(jwt, jwt_valid) != 0)
     {
@@ -594,6 +600,7 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
     }
     // fprintf(stderr, "access_token is authentic! sub: %s\n", jwt_get_grant(jwt, "sub"));
     // username_in_token = (char *)jwt_get_grant(jwt, "preferred_username");
+    logger("token validation", "getting username");
     asprintf(p_username_in_token, "%s", jwt_get_grant(jwt, "preferred_username"));
     printf("username of the token user %s \n", *p_username_in_token);
     // jwt_dump_fp(jwt, stdout, 1);
@@ -602,12 +609,12 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
     free(jwt_str);
     success = 1;
     *claim = jwt_get_grants_json(jwt, *claim);
-
+    logger("token validation", "end of validation");
 finish:
     jwt_free(jwt);
 finish_valid:
     jwt_valid_free(jwt_valid);
-
+    logger("token validation", "end");
     return success;
 }
 
@@ -660,3 +667,23 @@ void cleanupArray(char **array, int n)
     }
     free(array);
 }
+
+// json_t *__wrap_json_object(void) {
+//     json_object_t *object = jsonp_malloc(sizeof(json_object_t));
+//     if (!object)
+//         return NULL;
+
+//     if (!hashtable_seed) {
+//         /* Autoseed */
+//         json_object_seed(0);
+//     }
+
+//     json_init(&object->json, JSON_OBJECT);
+
+//     if (hashtable_init(&object->hashtable)) {
+//         jsonp_free(object);
+//         return NULL;
+//     }
+
+//     return &object->json;
+// }
