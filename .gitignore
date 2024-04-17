@@ -177,4 +177,7 @@ projet/Pam_modules/testing.txt
 installation/keycloak/data/h2/keycloakdb.lock.db
 installation/keycloak/data/h2/keycloakdb.mv.db
 installation/keycloak/data/h2/keycloakdb.trace.db
+
 !Makefile
+!lib
+!obj
