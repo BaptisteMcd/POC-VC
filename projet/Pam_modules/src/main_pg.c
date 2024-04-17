@@ -10,57 +10,19 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <curl/curl.h>
-// #include <jwt.h>
 #include "../include/logger.h"
 #include "../include/kc_auth.h"
-// #include "kc_auth.c"
-
-#define MAX_USERFILE_SIZE 1024
-#define USERSFILE "users"
 
 void cleanup_pointer(pam_handle_t *handle, void *data, int error_status)
 {
-	// printf("cleanup_pointer shunt\n");
-	// free(data);
-} // Cleanup function
+	free(data);
+} 
 
 void change_pass(const char *, const char *);
 
 void change_pass(const char *username, const char *password)
 {
-	// TO REWRITE
-	FILE *f = fopen(USERSFILE, "wr");
-	char content[MAX_USERFILE_SIZE];
-	int pos = 0;
-	bool authenticated = false;
-
-	int filepos = 0;
-
-	int c;
-	/* Reading the file until EOF and filling content */
-	while ((c = fgetc(f)) != EOF)
-	{
-		content[pos++] = c;
-	}
-
-	char *userfield = strtok(content, ":");
-	char *passfield = strtok(NULL, "\n");
-	filepos += strlen(userfield) + strlen(passfield) + 2;
-	while (1)
-	{
-		if (strcmp(username, userfield) == 0 &&
-			strcmp(password, passfield) == 0)
-		{
-			authenticated = true;
-			break;
-		}
-		userfield = strtok(NULL, ":");
-		if (userfield == NULL)
-			break;
-		passfield = strtok(NULL, "\n");
-		if (passfield == NULL)
-			break;
-	}
+	// TO REWRITE ?
 }
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
@@ -69,6 +31,15 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 	int pam_code;
 	const char *username = NULL;
 	const char *password = NULL;
+
+	char *access_token;
+	char *id_token;
+	char *refresh_token;
+
+	char *pubkey;
+	char *client_access_token;
+	char *client_id_token;
+
 	/* Asking the application for an  username */
 	pam_code = pam_get_user(handle, &username, "USERNAME: ");
 	if (pam_code != PAM_SUCCESS)
@@ -80,82 +51,72 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 
 	// Récupération des jetons
 	char path_tokens[512];
-	// sprintf(path_tokens, "/home/%s/.tokens", username);
-	sprintf(path_tokens, "/tmp/.tokens"); // testing
 
+	sprintf(path_tokens, "/tmp/.tokens"); // sprintf(path_tokens, "/home/%s/.tokens", username);
 	FILE *pTokensFile = fopen(path_tokens, "r");
 	if (pTokensFile == NULL)
 	{
 		printf("Erreur lors de l'ouverture du fichier .tokens\n");
 		logger("test", "Erreur lors de l'ouverture du fichier .tokens");
-		return PAM_PERM_DENIED;
+		return PAM_AUTHINFO_UNAVAIL;
 	}
 
-	logger("pam_sm_authenticate pTokensFile", "pTokensFile");
-	char *access_token;
-	char *id_token;
-	char *refresh_token;
 	read_tokens("/tmp/.tokens", &access_token, &id_token, &refresh_token);
 	fclose(pTokensFile);
 	if (access_token == NULL || id_token == NULL || refresh_token == NULL)
 	{
 		printf("Erreur lors de la lecture des tokens\n");
 		logger("test", "Erreur lors de la lecture des tokens");
-		return PAM_PERM_DENIED;
+		return PAM_AUTHINFO_UNAVAIL;
 	}
 	logger("pg auth", "success dans la récupération des jetons");
 
-	// Clé publique à partir du serveur Keycloak
-	char *pubkey;
 	bool success_getting_pk = getpubkey(&pubkey);
 	if (!success_getting_pk)
-	{
+	{ // Public key not retrieved
 		printf("Clé publique non récupérée\n");
 		logger("pg auth", "clé publique non récupérée");
 	}
 	logger("pg auth", "Clé publique récupérée dans le main\n");
 
-	// Validation du jeton
 	char *claim = "resource_access";
 	char *token_user;
-	logger("Auth token", "Going into token validation");
 	bool succes_token_validation = validate_token((const char **)&access_token, (const char **)&pubkey, &claim, &token_user);
-	
-
 	if (!succes_token_validation)
-	{
+	{ // Le jeton n'a pas été validé
 		logger("Auth token", "TOKEN NOT VALIDATED");
 		return PAM_PERM_DENIED;
 	}
 	logger("auth pg jeton valide pour utilisateur : ", token_user);
-	return PAM_SUCCESS;
-	
-	if (verif_existance_utilisateur(username, (const char **)&access_token))
-	{
-		printf("Utilisateur trouvé\n");
-		logger("test", "verif user fonctionnelle");
-	}
-	else
-	{
-		printf("Utilisateur non trouvé\n");
-		logger("test", "verif user non fonctionnelle");
-	}
-	if (true)
-	{ // Authenticated
-		logger("sm authenticate good", username);
-		printf("Welcome, %s\n", username);
 
-		// set the user env and tokens
-		pam_set_item(handle, PAM_USER, username);
-
-		return PAM_SUCCESS;
-	}
-	else
-	{ // Bad authentification
-		fprintf(stderr, "Wrong username or password\n");
-		logger("sm authenticate bad", username);
+	if (strcmp(token_user, username) != 0)
+	{ // Le jeton ne correspond pas au nom de utilisateur
+		logger("auth pg", "username of linux session and token_user are different");
 		return PAM_PERM_DENIED;
 	}
+	logger("auth pg", "username of linux session and token_user are the same");
+
+	if (!jeton_client("openid", &client_access_token, &client_id_token))
+	{ // Failed to retrieve client token
+		logger("pg auth", "Failed to retrieve client token");
+		return PAM_AUTHINFO_UNAVAIL;
+	}
+
+	if (!verif_existance_utilisateur(username, (const char **)&client_access_token))
+	{ // Bad authentification
+		fprintf(stderr, "Wrong username or password\n");
+		logger("pg authenticate bad utilisateur non trouvé", username);
+		return PAM_USER_UNKNOWN;
+
+	} // Good authentification
+
+
+	// Now we need to allows the roles for PGSQL
+
+	logger("pg authenticate good", username);
+	printf("Welcome, %s\n", username);
+	pam_set_item(handle, PAM_USER, username);
+	return PAM_SUCCESS;
 }
 
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc,

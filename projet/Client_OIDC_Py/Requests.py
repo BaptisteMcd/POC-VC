@@ -159,13 +159,14 @@ class requetes_keycloak:
 #ONLY FOR TESTING
 #r,r_json = requetes_keycloak.requete_jeton_user("firstuser","test")
 
-# r,r_json = requetes_keycloak.requete_jeton_user("batman","test")
+# r,r_json = requetes_keycloak.requete_jeton_user("firstuser","test")
 # print(r_json)
-#print(r_json['access_token'])
+# print(r_json['access_token'])
 # input()
 #r,r_json = requetes_keycloak.requete_s_enregister(r_json['access_token'],"testuserert7415m","psw","prenom","nom","b32222at2edz85@gmail.com")
 # r = requetes_keycloak.requete_deconnecter(r_json['access_token'],r_json['refresh_token'])
 # print(r)
 # print(str(r_json))
-requetes_keycloak.requete_get_pubkey()
+# requetes_keycloak.requete_get_pubkey()
+
 

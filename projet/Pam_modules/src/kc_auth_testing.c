@@ -37,8 +37,8 @@ int main()
     {
         printf("Jeton client executé obtenu avec succès\n");
         logger("test", "jeton client obtenu avec succès");
-        printf("access_token : %s\n\n", access_token);
-        printf("refresh_token : %s\n\n", id_token);
+        // printf("access_token : %s\n\n", access_token);
+        // printf("refresh_token : %s\n\n", id_token);
     }
     else
     {
@@ -46,6 +46,7 @@ int main()
     }
 
     bool valid = verif_existance_utilisateur("firstuser", (const char **)&access_token);
+    // attention aux roles du client
     if (valid)
     {
         printf("Utilisateur trouvé\n");

@@ -78,7 +78,30 @@ const bool parse_role_claims(const char **p_claims, const char *origin, char ***
  * @return true if succeeded, false otherwise
 */
 const bool write_tokens(const char * filename, const char *access_token, const char *refresh_token, const char *id_token);
-char * read_conf(FILE *file, char const *desired_name);
+
+
+/**
+ * Fonction to read tokens from a file
+ * @param filename Name of the file
+ * @param access_token pointer on the access token
+ * @param refresh_token pointer on the refresh token
+ * @param id_token pointer on the id token
+ * @return true if succeeded, false otherwise
+ */
 const bool read_tokens(const char *filename, char **access_token, char **refresh_token, char **id_token);
+
+/**
+ * Fonction to read a configuration file
+ * @param file the file to read
+ * @param desired_name the name of the configuration to read
+ * @return the value of the configuration
+ */
+char * read_conf(FILE *file, char const *desired_name);
+
+/**
+ * Fonction to clean an array of char *
+ * @param array the array to clean
+ * @param n the number of elements in the array
+ */
 void cleanupArray(char **array, int n);
 #endif /* KC_AUTH_H */

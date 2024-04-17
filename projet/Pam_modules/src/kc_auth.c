@@ -62,6 +62,34 @@ WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
     return realsize;
 }
 
+__attribute__((constructor)) void init(void)
+{
+    logger("kc_auth", "init");
+    FILE *pConfigFile = fopen(CONFIG_FILE, "r");
+    if (pConfigFile == NULL)
+    {
+        printf("Erreur lors de l'ouverture du fichier de configuration kc_auth\n");
+        logger("test", "Erreur lors de l'ouverture du fichier de configuration kc_auth");
+        return;
+    }
+    KEYCLOAK_IP = read_conf(pConfigFile, "KEYCLOAK_IP");
+    KEYCLOAK_PORT = read_conf(pConfigFile, "KEYCLOAK_PORT");
+    REALM_NAME = read_conf(pConfigFile, "REALM_NAME");
+    CLIENT_ID = read_conf(pConfigFile, "CLIENT_ID");
+    CLIENT_SECRET = read_conf(pConfigFile, "CLIENT_SECRET");
+    fclose(pConfigFile);
+    return;
+}
+__attribute__((destructor)) void fini(void)
+{
+    logger("kc_auth", "fini");
+    free(KEYCLOAK_IP);
+    free(KEYCLOAK_PORT);
+    free(REALM_NAME);
+    free(CLIENT_ID);
+    return;
+}
+
 char *read_conf(FILE *file, char const *desired_name)
 {
     char name[128];
@@ -105,6 +133,7 @@ const bool write_tokens(const char *filename, const char *access_token, const ch
     fclose(file);
     return true;
 }
+
 const bool read_tokens(const char *filename, char **access_token, char **refresh_token, char **id_token)
 {
     FILE *file;
@@ -133,37 +162,8 @@ const bool read_tokens(const char *filename, char **access_token, char **refresh
             *id_token = strdup(val);
         }
     }
-
     fclose(file);
     return true;
-}
-
-__attribute__((constructor)) void init(void)
-{
-    logger("kc_auth", "init");
-    FILE *pConfigFile = fopen(CONFIG_FILE, "r");
-    if (pConfigFile == NULL)
-    {
-        printf("Erreur lors de l'ouverture du fichier de configuration kc_auth\n");
-        logger("test", "Erreur lors de l'ouverture du fichier de configuration kc_auth");
-        return;
-    }
-    KEYCLOAK_IP = read_conf(pConfigFile, "KEYCLOAK_IP");
-    KEYCLOAK_PORT = read_conf(pConfigFile, "KEYCLOAK_PORT");
-    REALM_NAME = read_conf(pConfigFile, "REALM_NAME");
-    CLIENT_ID = read_conf(pConfigFile, "CLIENT_ID");
-    CLIENT_SECRET = read_conf(pConfigFile, "CLIENT_SECRET");
-    fclose(pConfigFile);
-    return;
-}
-__attribute__((destructor)) void fini(void)
-{
-    logger("kc_auth", "fini");
-    free(KEYCLOAK_IP);
-    free(KEYCLOAK_PORT);
-    free(REALM_NAME);
-    free(CLIENT_ID);
-    return;
 }
 
 bool authentification_utilisateur(const char *user, const char *pass, char **p_access_token, char **p_refresh_token, char **p_id_token)
@@ -388,12 +388,15 @@ const bool verif_existance_utilisateur(const char *nom_utilisateur, const char *
     { // Bad response
         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
         printf("Failed to perform request checking user existance, got code : %lu \n", response_code);
+        logger("Existance utilisateur", "curl_easy_perform() failed");
         return false;
     }
     else
     { // Good response but it doesn't mean the user is found
+        printf("Response code : %lu \n", response_code);
         if (response_code == 200)
         { // Good response, parsing ...
+            logger("Existance utilisateur", "Good response");
             char *result_username = NULL;
             jsmn_parser p;
             jsmntok_t t[128]; /* We expect no more than 128 JSON tokens */
@@ -598,11 +601,10 @@ const bool validate_token(const char **p_token, const char **p_public_key, char 
         jwt_dump_fp(jwt, stderr, 1);
         goto finish;
     }
-    // fprintf(stderr, "access_token is authentic! sub: %s\n", jwt_get_grant(jwt, "sub"));
-    // username_in_token = (char *)jwt_get_grant(jwt, "preferred_username");
+
     logger("token validation", "getting username");
     asprintf(p_username_in_token, "%s", jwt_get_grant(jwt, "preferred_username"));
-    printf("username of the token user %s \n", *p_username_in_token);
+    // printf("username of the token user %s \n", *p_username_in_token);
     // jwt_dump_fp(jwt, stdout, 1);
     char *jwt_str = jwt_dump_str(jwt, 0);
     printf("%s", jwt_str);
@@ -659,6 +661,7 @@ const bool parse_role_claims(const char **p_claims, const char *origin, char ***
     }
     return success;
 }
+
 void cleanupArray(char **array, int n)
 {
     for (int i = 0; i < n; i++)
@@ -667,23 +670,3 @@ void cleanupArray(char **array, int n)
     }
     free(array);
 }
-
-// json_t *__wrap_json_object(void) {
-//     json_object_t *object = jsonp_malloc(sizeof(json_object_t));
-//     if (!object)
-//         return NULL;
-
-//     if (!hashtable_seed) {
-//         /* Autoseed */
-//         json_object_seed(0);
-//     }
-
-//     json_init(&object->json, JSON_OBJECT);
-
-//     if (hashtable_init(&object->hashtable)) {
-//         jsonp_free(object);
-//         return NULL;
-//     }
-
-//     return &object->json;
-// }

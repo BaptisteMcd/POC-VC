@@ -1,4 +1,4 @@
-ip_kc = "172.30.6.16"
+ip_kc = "172.17.35.105"
 port_kc = "8080"
 realm_name = "DevRealm"
 client_id = "Client-test"
