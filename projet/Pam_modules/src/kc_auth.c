@@ -9,8 +9,8 @@
 #include "../include/jsmn.h"
 // #include "kc_auth.h"
 #define CONFIG_FILE "/etc/kc_auth.conf"
-#include "jansson.h"
-#include "jwt.h"
+#include "../lib/jansson.h"
+#include "../lib/jwt.h"
 
 // #include <libconfig.h> ?
 //  TODO : AJOUTER UN FICHIER DE CONFIG KC DANS ETC
@@ -252,7 +252,8 @@ bool authentification_utilisateur(const char *user, const char *pass, char **p_a
         }
         else
         { // Failed
-            logger("Authentification utilisateur", "Failed");
+            logger("Authentification utilisateur", "Failed : got wrong response code");
+            logger("Authentification utilisateur", chunk.memory);
             printf("Wrong username/password, got response : %ld from server\n", response_code);
         }
     }

@@ -1,0 +1,28 @@
+- hosts: all
+
+  vars_files:
+    - vars.yml
+
+	handlers:
+		- name: Restart postgresql
+      ansible.builtin.systemd:
+        name: postgresql
+        state: restarted
+
+  tasks:
+    - name: Install PostgreSQL and psycopg2
+      ansible.builtin.dnf:
+        name: postgresql-server,postgresql-contrib,python3-psycopg2
+        state: present
+        update_cache: true
+
+    - name: Create the cluster
+      ansible.builtin.command:
+        cmd: postgresql-setup --initdb
+        creates: /var/lib/pgsql/data/PG_VERSION
+
+    - name: Start and enable the service
+      ansible.builtin.systemd:
+        name: postgresql
+        state: started
+        enabled: true

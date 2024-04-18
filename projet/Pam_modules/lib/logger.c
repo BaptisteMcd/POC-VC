@@ -13,7 +13,7 @@ void logger(const char *tag, const char *message)
 	pAuditLogFile = fopen(LOG_FILE_PATH, "a"); // a mode so only append
 	if (pAuditLogFile == NULL)
 	{
-		perror("Error opening file.");
+		perror("Error opening log file.");
 	}
 	else
 	{

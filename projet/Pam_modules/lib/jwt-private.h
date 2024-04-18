@@ -8,7 +8,7 @@
 #ifndef JWT_PRIVATE_H
 #define JWT_PRIVATE_H
 
-#include <jansson.h>
+#include "jansson.h"
 #include <time.h>
 
 struct jwt {

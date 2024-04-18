@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "../include/kc_auth.h"
 #include "../include/jsmn.h"
-#include "../src/logger.c"
+#include "../lib/logger.c"
 #include "../src/kc_auth.c"
 // #include <libpq-dev.h>
 

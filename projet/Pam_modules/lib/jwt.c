@@ -566,9 +566,7 @@ int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,
 
 	/* Now that we have everything split up, let's check out the
 	 * header. */
-	logger("jwt_decode", "creatung new jwt");
 	ret = jwt_new(&new);
-	logger("jwt_decode", "success creatung new jwt");
 	if (ret) {
 		goto decode_done;
 	}
@@ -581,12 +579,9 @@ int jwt_decode(jwt_t **jwt, const char *token, const unsigned char *key,
 		memcpy(new->key, key, key_len);
 		new->key_len = key_len;
 	}
-	logger("jwt_decode", "verif head");
 	ret = jwt_verify_head(new, head);
-	logger("jwt_decode", "verif head done");
 	if (ret)
 		goto decode_done;
-	logger("jwt_decode", "parsing body");
 	ret = jwt_parse_body(new, body);
 	if (ret)
 		goto decode_done;
@@ -607,7 +602,6 @@ decode_done:
 		*jwt = new;
 
 	jwt_freemem(head);
-	logger("jwt_decode", "ended function");
 	return ret;
 }
 

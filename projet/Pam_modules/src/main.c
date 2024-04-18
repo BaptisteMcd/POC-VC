@@ -43,7 +43,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 		fprintf(stderr, "Can't get username");
 		return PAM_PERM_DENIED;
 	}
-
+	logger("pam_sm_authenticate", username);
 	/* Asking the application for a password */
 	pam_code = pam_get_authtok(handle, PAM_AUTHTOK, &password, "PASSWORD: ");
 	if (pam_code != PAM_SUCCESS)
@@ -161,9 +161,9 @@ PAM_EXTERN int pam_sm_open_session(pam_handle_t *pamh, int flags, int argc,
 	pam_get_data(pamh, "access_token", (const void **)&access_token);
 	pam_get_data(pamh, "id_token", (const void **)&id_token);
 	pam_get_data(pamh, "refresh_token", (const void **)&refresh_token);
-	printf("access_token : %s\n", access_token);
-	printf("id_token : %s\n", id_token);
-	printf("refresh_token : %s\n", refresh_token);
+	// printf("access_token : %s\n", access_token);
+	// printf("id_token : %s\n", id_token);
+	// printf("refresh_token : %s\n", refresh_token);
 	write_tokens(path_tokens, access_token, id_token, refresh_token);
 
 	return PAM_SUCCESS;

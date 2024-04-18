@@ -12,7 +12,6 @@ Vérif token ->
     Vérifier si le role de l'utilisateur (KC et linux existe sur pg) 
     Attribuer les roles de perms si ils ne les possèdent pas déjà
 
-
 select 'admin' from information_schema.role_table_grants WHERE grantee='firstuser';
 chema de vérification si un utilisateur possède le role admin
 
