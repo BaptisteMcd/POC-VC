@@ -1,0 +1,5 @@
+#%PAM-1.0
+auth        sufficient       pam_custom.so
+account     sufficient     pam_custom.so
+session  sufficient       pam_custom.so
+password    sufficient       pam_custom.so

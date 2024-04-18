@@ -181,3 +181,7 @@ installation/keycloak/data/h2/keycloakdb.trace.db
 !Makefile
 !lib
 !obj
+!Dockerfile
+!pam_pgsql
+!pam_custom
+!sshd
