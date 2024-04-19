@@ -10,13 +10,15 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <curl/curl.h>
+#include <libpq-fe.h>
 #include "../include/logger.h"
 #include "../include/kc_auth.h"
+// #include "../src/kc_auth.c"
 
 void cleanup_pointer(pam_handle_t *handle, void *data, int error_status)
 {
 	free(data);
-} 
+}
 
 void change_pass(const char *, const char *);
 
@@ -48,7 +50,24 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 		return PAM_PERM_DENIED;
 	}
 	logger("pam_sm_authenticate pg pam", username);
-
+	
+	// Temporary shunt if user is postgres
+	if (strcmp(username, "postgres") == 0)
+	{
+		// check password 
+		pam_code = pam_get_authtok(handle, PAM_AUTHTOK, &password, "PASSWORD: ");
+		if (pam_code != PAM_SUCCESS)
+		{
+			fprintf(stderr, "Can't get password");
+			return PAM_PERM_DENIED;
+		}
+		if (strcmp(password, "postgreslol") != 0)
+		{
+			fprintf(stderr, "Wrong password\n");
+			return PAM_PERM_DENIED;
+		}
+		return PAM_SUCCESS;
+	}
 	// Récupération des jetons
 	char path_tokens[512];
 
@@ -112,8 +131,60 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 
 
 	// Now we need to allows the roles for PGSQL
+	char **list_roles_kc;
+	int nroles_kc;
 
-	logger("pg authenticate good", username);
+	if(!parse_role_claims((const char **)&claim, "Client-test", &list_roles_kc, &nroles_kc)){
+		logger("pg authenticate", "Failed to parse role claims but user is legit");
+		cleanupArray(list_roles_kc, nroles_kc);
+		return PAM_SUCCESS;
+	}
+
+
+    const char *conninfo;
+    PGconn *conn;
+    PGresult *res;
+    int nFields;
+    int i, j;
+
+    conninfo = "dbname = postgres user=postgres password=postgreslol";
+    /* Crée une connexion à la base de données */
+    conn = PQconnectdb(conninfo);
+
+    /* Vérifier que la connexion au backend a été faite avec succès */
+    if (PQstatus(conn) != CONNECTION_OK)
+    {
+        fprintf(stderr, "Connection to database failed: %s",
+                PQerrorMessage(conn));
+        logger("test conndb error", PQerrorMessage(conn));
+        exit_nicely(conn);
+    } // Connection to database successful
+    logger("test conndb", "Connection to database ok");
+    InitSearchPath(conn);
+
+	if(!checkUserDB(conn, username)){
+		createUserDB(conn, username);
+		logger("pg authenticate, created user", username);
+	} // Create user if not exists
+	else{
+		logger("pg authenticate, user already exists", username);
+	}
+	
+    char **list_roles_db;
+    int nroles_db;
+	// Get the roles contained in the db for the specified user
+    getUserRoles(conn, "firstuser", &list_roles_db, &nroles_db);
+    assignAuthorizedRoles(conn,list_roles_db,nroles_db,list_roles_kc,nroles_kc);
+
+    // Cleanup
+    // cleanupArray(list_roles_db, nroles_db);
+    // cleanupArray(list_roles_kc, nroles_kc);
+    /* ferme la connexion à la base et nettoie */
+    PQfinish(conn);
+
+
+
+	logger("pg authenticate good allowing", username);
 	printf("Welcome, %s\n", username);
 	pam_set_item(handle, PAM_USER, username);
 	return PAM_SUCCESS;
@@ -126,30 +197,8 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc,
 	printf("pam_sm_acct_mgmt\n");
 	logger("pam_sm_acct_mgmt pg pam", "username to be defined");
 
-	struct tm expiry_date;
-	expiry_date.tm_mday = 31;
-	expiry_date.tm_mon = 12;
-	expiry_date.tm_year = 2020;
-	expiry_date.tm_sec = 0;
-	expiry_date.tm_min = 0;
-	expiry_date.tm_hour = 0;
-
-	time_t expiry_time;
-	time_t current_time;
-
-	/* Getting time_t value for expiry_date and current date */
-	expiry_time = mktime(&expiry_date);
-	current_time = time(NULL);
-
-	/* Checking the account is not expired */
-	if (current_time > expiry_time)
-	{
-		return PAM_PERM_DENIED;
-	}
-	else
-	{
-		return PAM_SUCCESS;
-	}
+	
+	return PAM_SUCCESS;
 }
 
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc,

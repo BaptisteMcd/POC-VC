@@ -3,13 +3,13 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "../include/kc_auth.h"
 #include "../include/jsmn.h"
 #include "../lib/logger.c"
 #include "../src/kc_auth.c"
-// #include <libpq-dev.h>
-
+#include <libpq-fe.h>
 // #define CONFIG_FILE "../kc_auth.conf" // Don't forget to include define config file
 
 int main()
@@ -131,6 +131,9 @@ int main()
     }
     char *claim = "resource_access";
     char *token_user;
+    char **list_roles;
+    int nroles;
+
     bool succes_token_validation = validate_token((const char **)&access_token2, (const char **)&pubkey, &claim, &token_user);
     if (succes_token_validation)
     {
@@ -139,8 +142,7 @@ int main()
         if (claim != NULL)
         {
             printf("The claim searched %s \n", claim);
-            char **list_roles;
-            int nroles;
+
             printf("Parsing roles claims\n");
             bool success_parse = parse_role_claims((const char **)&claim, (const char *)CLIENT_ID, &list_roles, &nroles);
             if (success_parse)
@@ -150,8 +152,11 @@ int main()
                 {
                     printf("Role n %d: %s\n", i, list_roles[i]);
                 }
-                cleanupArray(list_roles, nroles);
-            }else{
+
+                // cleanupArray(list_roles, nroles);
+            }
+            else
+            {
                 printf("No corresponding claims found\n");
             }
         }
@@ -160,6 +165,49 @@ int main()
     {
         printf("Erreur dans la validation du jeton donné");
     }
+
+    const char *conninfo;
+    PGconn *conn;
+    PGresult *res;
+    int nFields;
+    int i, j;
+
+    conninfo = "dbname = postgres user=postgres";
+    // Connecte avec l'utilisateur courant sur la base de données
+    /* Crée une connexion à la base de données */
+    conn = PQconnectdb(conninfo);
+
+    /* Vérifier que la connexion au backend a été faite avec succès */
+    if (PQstatus(conn) != CONNECTION_OK)
+    {
+        fprintf(stderr, "Connection to database failed: %s",
+                PQerrorMessage(conn));
+        logger("test conndb error", PQerrorMessage(conn));
+        exit_nicely(conn);
+    }
+    printf("Connection to database ok\n");
+    logger("test conndb", "Connection to database ok");
+    InitSearchPath(conn);
+
+
+    char **list_roles_db;
+    int nroles_db;
+    getUserRoles(conn, "firstuser", &list_roles_db, &nroles_db);
+    // Print the roles conatined in the db for specified user
+    for (int i = 0; i < nroles_db; i = i + 1)
+    {
+        printf("PG Role n %d: %s\n", i, list_roles_db[i]);
+    }
+    
+    printf("Comparing roles diffrence from Keycloak and DB\n");
+    assignAuthorizedRoles(conn,list_roles_db,nroles_db,list_roles,nroles);
+
+    // Cleanup
+    cleanupArray(list_roles_db, nroles_db);
+    cleanupArray(list_roles, nroles);
+    /* ferme la connexion à la base et nettoie */
+    PQfinish(conn);
+
     free(access_token);
     free(id_token);
     free(refresh_token);

@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <curl/curl.h>
+#include <libpq-fe.h>
 #include "../include/logger.h"
 #include "../include/kc_auth.h"
 // #include "kc_auth.c"

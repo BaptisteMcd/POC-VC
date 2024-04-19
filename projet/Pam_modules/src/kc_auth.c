@@ -11,11 +11,7 @@
 #define CONFIG_FILE "/etc/kc_auth.conf"
 #include "../lib/jansson.h"
 #include "../lib/jwt.h"
-
-// #include <libconfig.h> ?
-//  TODO : AJOUTER UN FICHIER DE CONFIG KC DANS ETC
-//  TODO PLUS TARD UTILISER TRUSTSYSTEM REDHAT
-//  CHECK ASPRINTF
+#include <libpq-fe.h>
 
 // config
 static char *KEYCLOAK_IP;
@@ -670,4 +666,160 @@ void cleanupArray(char **array, int n)
         free(array[i]);
     }
     free(array);
+}
+void exit_nicely(PGconn *conn)
+{
+    PQfinish(conn);
+    exit(1);
+}
+
+bool getUserRoles(PGconn *conn, const char *username, char ***p_retVal, int *nretVal)
+{
+    PGresult *res;
+    char *query;
+    asprintf(&query, "SELECT rolname FROM pg_roles WHERE pg_has_role('%s',oid,'member');", username);
+    res = PQexec(conn, query);
+    free(query);
+    if (PQresultStatus(res) != PGRES_TUPLES_OK)
+    {
+
+        fprintf(stderr, "Select current user failed : %s", PQerrorMessage(conn));
+        PQclear(res);
+        exit_nicely(conn);
+    }
+
+    *nretVal = PQntuples(res);                                // The number of rows
+    *p_retVal = (char **)malloc(sizeof(char *) * (*nretVal)); // Allocate the array of pointers of chars
+    for (int j = 0; j < *nretVal; j++)
+    {
+    }
+    printf("Number of rows: %d\n", *nretVal);
+    // Print all the rows and columns
+    for (int i = 0; i < *nretVal; i++)
+    {
+        printf("%s\t", PQgetvalue(res, i, 0));
+        asprintf(&(*p_retVal)[i], "%s", PQgetvalue(res, i, 0));
+    }
+    PQclear(res);
+    return true;
+}
+
+bool assignRole2User(PGconn *conn, const char *role, const char *username)
+{
+    PGresult *res;
+    char *query;
+    asprintf(&query, "GRANT %s TO %s;", role, username);
+    res = PQexec(conn, query);
+    free(query);
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        fprintf(stderr, "Assign role to user failed : %s", PQerrorMessage(conn));
+        PQclear(res);
+        exit_nicely(conn);
+    }
+    PQclear(res);
+    return true;
+}
+// check if role exist in the db, if it exists in DB
+bool roleExists(PGconn *conn, const char *role)
+{
+    PGresult *res;
+    char *query;
+    asprintf(&query, "SELECT 1 FROM pg_roles WHERE rolname = '%s';", role);
+    res = PQexec(conn, query);
+    free(query);
+    if (PQresultStatus(res) != PGRES_TUPLES_OK)
+    {
+        fprintf(stderr, "Select role failed : %s", PQerrorMessage(conn));
+        PQclear(res);
+        exit_nicely(conn);
+    }
+    int rows = PQntuples(res); // The number of rows
+    PQclear(res);
+    return rows == 1;
+}
+bool InitSearchPath(PGconn *conn)
+{ /* Initialise un search path sûr, pour qu'un utilisateur
+malveillant ne puisse prendre le contrôle. */
+    PGresult *res;
+    res = PQexec(conn, "SELECT pg_catalog.set_config('search_path', '', false)");
+    if (PQresultStatus(res) != PGRES_TUPLES_OK)
+    {
+        fprintf(stderr, "SET failed: %s", PQerrorMessage(conn));
+        PQclear(res);
+        exit_nicely(conn);
+    }
+    PQclear(res);
+    return true;
+}
+
+void assignAuthorizedRoles(PGconn *conn, const char **rolesDB, const int nrolesDB, const char **rolesKC, const int nrolesKC)
+{
+    for (int i = 0; i < nrolesKC; i = i + 1)
+    {
+        printf("Role n %d: %s\n", i, rolesKC[i]);
+        // Check if the role is in the list of roles from the DB
+        bool found = false;
+        for (int j = 0; j < nrolesDB; j = j + 1)
+        {
+            if (strcmp(rolesKC[i], rolesDB[j]) == 0)
+            {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+        {
+            printf("    Role %s NOT ASSIGNED in Postgres\n", rolesKC[i]);
+
+            if (roleExists(conn, rolesKC[i]))
+            {
+                printf("        Role %s EXIST in Postgres .. Assigning role \n", rolesKC[i]);
+                assignRole2User(conn, rolesKC[i], "firstuser");
+                logger("Role assignation", rolesKC[i]);
+            }
+            else
+            {
+                printf("        Role %s DOES NOT EXIST in Postgres .. Not assigning role \n", rolesKC[i]);
+            }
+        }
+        else
+        {
+            printf("    Role %s ASSIGNED in Postgres\n", rolesKC[i]);
+        }
+    }
+}
+
+bool checkUserDB(PGconn *conn, const char *username)
+{
+    PGresult *res;
+    char *query;
+    asprintf(&query, "SELECT 1 FROM pg_roles WHERE rolname = '%s';", username);
+    res = PQexec(conn, query);
+    free(query);
+    if (PQresultStatus(res) != PGRES_TUPLES_OK)
+    {
+        fprintf(stderr, "Select role failed : %s", PQerrorMessage(conn));
+        PQclear(res);
+        exit_nicely(conn);
+    }
+    int rows = PQntuples(res); // The number of rows
+    PQclear(res);
+    return 1 == rows;
+}
+bool createUserDB(PGconn *conn, const char *username)
+{
+    PGresult *res;
+    char *query;
+    asprintf(&query, "CREATE USER %s;", username);
+    res = PQexec(conn, query);
+    free(query);
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        fprintf(stderr, "Select role failed : %s", PQerrorMessage(conn));
+        PQclear(res);
+        exit_nicely(conn);
+    }
+    PQclear(res);
+    return true;
 }

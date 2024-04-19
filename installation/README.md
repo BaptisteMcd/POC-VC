@@ -1,29 +1,28 @@
-# Installation and configuration of the POC
+# Container install 
 
-
-Before anything, you'll need to create a network.
-
-
-Run the Keycloak server container running with a persistant volume :
+Run the Keycloak server container running with a persistant volume, in Server_Keycloak directory :
 
     docker compose up -d 
 
 
-Build the PostgreSQL client container preconfigured : 
+Build the preconfigured PostgreSQL client container : 
 
-    docker build --build-arg -t client_testing -f ./installation/Client_PostgreSQL/Dockerfile .
+    docker build --build-arg -t client -f ./installation/Client_PostgreSQL/Dockerfile .
 
-Run the build container :
+Run the built container :
 
-    docker run -it -d client_testing
+    docker run -it -d client
 
+Get its ip using inspect and ssh into it using the firstuser.
 
-Get it ip 
+    ssh firstuser@172.17.0.2
 
-docker inspect \
-  -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' [container-name]
-You can access it now using ssh 
-You can access now at PostgreSQL using psql 
+Keycloak passowrd : test 
 
 
-Note : Pour se connecter à postgreSQL en local les utilisateurs doievent avoir le droit de se login.
+You are now using Keycloak IDP to connect !
+
+Login in PostgreSQL using your tokens (stored in /tmp/.tokens for now)
+
+    psql
+

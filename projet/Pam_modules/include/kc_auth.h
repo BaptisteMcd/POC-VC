@@ -1,3 +1,4 @@
+#include <libpq-fe.h>
 #ifndef KC_AUTH_H
 #define KC_AUTH_H
 
@@ -104,4 +105,73 @@ char * read_conf(FILE *file, char const *desired_name);
  * @param n the number of elements in the array
  */
 void cleanupArray(char **array, int n);
+
+/**
+ * Fonction to exit nicely PostgresSQL Database connection
+ * @param conn the connection to close
+*/
+void exit_nicely(PGconn *conn);
+
+/**
+ * Fonction to get the roles of a user in the database
+ * @param conn the connection to the database
+ * @param username the name of the user
+ * @param p_retVal pointer on the return value, an array of char *. Each string contains a diffrent role
+ * @param nretVal pointer on the number of values in the array of char *
+ * @return true if succeeded, false otherwise
+ * Clean with cleanupArray
+*/
+bool getUserRoles(PGconn *conn, const char *username, char ***p_retVal, int *nretVal);
+
+
+/**
+ * Fonction to assign a role to a user in the database
+ * @param conn the connection to the database
+ * @param role the role to assign
+ * @param username the name of the user
+ * @return true if succeeded
+*/
+bool assignRole2User(PGconn *conn, const char *role, const char *username);
+
+
+/**
+ * Fonction to check if a role exists in the database
+ * @param conn the connection to the database
+ * @param role the role to check
+ * @return true if the role exists, false otherwise
+*/
+bool roleExists(PGconn *conn, const char *role);
+
+/**
+ * Initialize the search path of the database to prevent unauthorized access
+*/
+bool InitSearchPath(PGconn *conn);
+
+/**
+ * Fonction to assign authorized roles to a user in the database
+ * @param conn the connection to the database
+ * @param rolesDB the roles in the database
+ * @param nrolesDB the number of roles in the database
+ * @param rolesKC the roles in the keycloak server
+ * @param nrolesKC the number of roles in the keycloak server
+*/
+void assignAuthorizedRoles(PGconn * conn, const char ** rolesDB, const int nrolesDB, const char ** rolesKC, const int nrolesKC);
+
+/**
+ * Fonction to check if user exists in the database
+ * @param conn the connection to the database
+ * @param username the name of the user
+ * @return true if the user exists, false otherwise
+*/
+bool checkUserDB(PGconn *conn, const char *username);
+
+/**
+ * Fonction to create a user in the database
+ * @param conn the connection to the database
+ * @param username the name of the user to create
+ * @return true if the user is created
+*/
+bool createUserDB(PGconn *conn, const char *username);
+
+
 #endif /* KC_AUTH_H */

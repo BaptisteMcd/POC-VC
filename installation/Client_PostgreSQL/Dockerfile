@@ -2,7 +2,7 @@
 
 # Administration fedora classique
 FROM fedora:latest
-RUN dnf -y update && dnf -y install make gcc libcurl-devel pam-devel openssl-devel.x86_64 supervisor openssh-server iputils && dnf clean all
+RUN dnf -y update && dnf -y install make gcc libcurl-devel pam-devel openssl-devel.x86_64 supervisor openssh-server iputils libpq-devel && dnf clean all
 
 RUN mkdir -p /var/run/sshd
 RUN mkdir -p /var/run/supervisord

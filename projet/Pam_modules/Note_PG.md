@@ -19,13 +19,21 @@ Donner un role admin à un utilisateur :
 
     GRANT admin1 TO firstuser;
 
+
 Permissions 
 
     SELECT * FROM pg_roles WHERE rolname='firstuser';
 
+
 Les roles d'un utilisateur firstuser : 
 
     SELECT rolname FROM pg_roles WHERE pg_has_role('firstuser',oid,'member');
+
+
+Connaitre l'utilisateur courant :
+
+    SELECT CURRENT_USER;
+
 
 Attention : 
 
@@ -36,3 +44,8 @@ sudo dnf install libpq-devel.x86_64
 
 gcc -fPIC -Wall -shared -o pam_cpgsql.so -Wl,-soname,pam_cpgsql.sqo main_pg.c -lcurl -ljwt
 sudo cp pam_cpgsql.so /lib64/security/pam_cpgsql.so
+
+
+Utilisateur BDD correspond aux utilisateurs Keycloak : (dont dev et password)
+
+SELECT * FROM pg_catalog.pg_user;

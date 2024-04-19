@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -fPIC -lcurl
-LDFLAGS = -lcurl
+CFLAGS = -fPIC -lcurl -lpq
+LDFLAGS = -lcurl -lpq
 
 SRC_DIR = ./src
 OBJ_DIR = ./obj
@@ -23,14 +23,14 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 TARGET = /lib64/security/pam_custom.so
 all: $(TARGET)
 $(TARGET): $(OBJ_FILES)
-	sudo ld -lcurl -lssl -lcrypto obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/main.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o  obj/jwt.o obj/jwt-openssl.o obj/base64.o -x --shared -o $(TARGET)
+	sudo ld -lcurl -lssl -lpq -lcrypto obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/main.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o  obj/jwt.o obj/jwt-openssl.o obj/base64.o -x --shared -o $(TARGET)
 
 
 # Pam custom for postgresql authentication
 TARGET2 = /lib64/security/pam_cpgsql.so
 all: $(TARGET2)
 $(TARGET2): $(OBJ_FILES)
-	sudo ld -lcurl -lssl -lcrypto obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/main_pg.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o  -x --shared -o $(TARGET2)
+	sudo ld -lcurl -lssl -lpq -lcrypto obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/main_pg.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o  -x --shared -o $(TARGET2)
 
 
 clean:
