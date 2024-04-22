@@ -32,8 +32,7 @@ Les roles d'un utilisateur firstuser :
 
 Connaitre l'utilisateur courant :
 
-    SELECT CURRENT_USER;
-
+    SELECT CURRENT_USER,SESSION_USER; 
 
 Attention : 
 
@@ -49,3 +48,9 @@ sudo cp pam_cpgsql.so /lib64/security/pam_cpgsql.so
 Utilisateur BDD correspond aux utilisateurs Keycloak : (dont dev et password)
 
 SELECT * FROM pg_catalog.pg_user;
+
+Liste et roles des databases :
+
+    \l
+
+TODO : finir les droits pour que l'utilisteur puisse se connecter

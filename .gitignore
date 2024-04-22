@@ -182,6 +182,7 @@ installation/keycloak/data/h2/keycloakdb.trace.db
 !lib
 !obj
 !Dockerfile
-!pam_pgsql
-!pam_custom
+!PAM
 !sshd
+!postgresql
+!su

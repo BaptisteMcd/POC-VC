@@ -811,7 +811,7 @@ bool createUserDB(PGconn *conn, const char *username)
 {
     PGresult *res;
     char *query;
-    asprintf(&query, "CREATE USER %s;", username);
+    asprintf(&query, "CREATE ROLE %s LOGIN INHERIT;", username);
     res = PQexec(conn, query);
     free(query);
     if (PQresultStatus(res) != PGRES_COMMAND_OK)

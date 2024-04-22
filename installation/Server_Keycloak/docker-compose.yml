@@ -3,7 +3,7 @@
 # ne pas utiliser
 services:
     keycloak:
-        container_name: kc
+        container_name: kc_server
         command: ["start-dev"]
         ports:
             - 8080:8080

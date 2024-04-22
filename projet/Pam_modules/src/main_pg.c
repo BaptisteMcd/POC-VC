@@ -61,7 +61,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 			fprintf(stderr, "Can't get password");
 			return PAM_PERM_DENIED;
 		}
-		if (strcmp(password, "postgreslol") != 0)
+		if (strcmp(password, "postgres") != 0)
 		{
 			fprintf(stderr, "Wrong password\n");
 			return PAM_PERM_DENIED;
@@ -147,7 +147,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
     int nFields;
     int i, j;
 
-    conninfo = "dbname = postgres user=postgres password=postgreslol";
+    conninfo = "dbname = postgres user=postgres password=postgres";
     /* Crée une connexion à la base de données */
     conn = PQconnectdb(conninfo);
 
