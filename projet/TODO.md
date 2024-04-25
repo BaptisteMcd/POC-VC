@@ -75,3 +75,19 @@ Cela signifie que nous avons besoin au moins d'un issuer/émetteur de VCs, et é
 L'attendu est de me présenter un powerpoint de X slides avec une première partie "vue haute" (quels composants remplissent quel rôle), puis une vue technique avec les échanges détaillés de chacun des composants entre eux lors du scénario d'une authentification via via plugin KC (cf supra).
 
 Ne pas oublier que si il y'a possibilité de chuinter pour le moment la partie blockchain, cela nous arrange.
+
+
+# 25/04 - 07/05
+
+Première étape: authentification par login/password similaire aux scénarios actuels avec en plus délivrance d'un jeton contenant des claims "vscisés". Le rôle auprès de la base postrgesql n'est plus un rôle keycloak mais délivré par un issuer. Scenario SANS DID.
+
+
+
+Rôles de chacun des composants :
+Issuer et verifier : Keycloak + plugin + agent
+Holder : conteneur "client" et son agent
+
+## A faire 
+* Montage d'une image VDR/ledger (intégration Indy 2 hyperledger).
+* Mise en place d'un containeur client ssh avec wallet et cloud agent aries installé en local 
+* Intégration du plugin verfiable credentials pour keycloak + ajout d'un cloud agent dans le containeur existant
