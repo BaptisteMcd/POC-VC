@@ -1,0 +1,8 @@
+{
+    "credential_identifier":"oid4vc_natural_personsdqs",
+    "format":"jwt_vc",
+    "proof":{
+	"proof_type":"JWT",
+	"proofObject":"eyJ0eXAiOiJvcGVuaWQ0dmNpL...Lb9zioZoipdP-jvh1WlA"
+    }
+}
