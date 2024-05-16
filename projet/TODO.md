@@ -91,3 +91,16 @@ Holder : conteneur "client" et son agent
 * Montage d'une image VDR/ledger (intégration Indy 2 hyperledger).
 * Mise en place d'un containeur client ssh avec wallet et cloud agent aries installé en local 
 * Intégration du plugin verfiable credentials pour keycloak + ajout d'un cloud agent dans le containeur existant
+
+# 16/05
+
+* Authentification par mot de passe maintenu
+* Réaliser le scénario suivant:
+  * utilisateur présente une demande d'authn au serveur
+  * Le serveur envoie ses credentials au keycloak
+  * le keycloak emet un VC avec le rôle pgsql de l'utilisateur
+  * Le serveur les parse et en vérifie la validité.
+
+* 2eme scénario: délivrance par le KC qui joue le rôle d'issuer d'un VC au holder=> développement d'un mini controller pour la délivrance des VCs.
+
+A venir => Intégration à un ledger?
