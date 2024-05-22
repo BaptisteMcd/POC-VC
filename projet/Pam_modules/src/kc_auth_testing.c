@@ -19,7 +19,6 @@ int main()
     char *access_token;
     char *refresh_token;
     char *id_token;
-
     FILE *f = fopen("/etc/kc_auth.conf", "r");
     if (f == NULL)
     {
@@ -75,7 +74,6 @@ int main()
     printf("access_token : %s\n", access_token);
     printf("id_token : %s\n", id_token);
     printf("refresh_token : %s\n", refresh_token);
-
     write_tokens("/tmp/.tokens_test", access_token, id_token, refresh_token);
     bool deco = deconnection((const char **)&access_token, (const char **)&refresh_token);
     if (deco)

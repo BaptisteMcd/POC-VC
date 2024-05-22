@@ -92,6 +92,7 @@ Est-ce que cela vaut la peine de faire une autre github avec les modules KC trad
 
 
 Dev futur ATTENTION à : https://github.com/FIWARE/keycloak-vc-issuer/issues/36
+ET AUSSI À https://github.com/FIWARE/keycloak-vc-issuer/issues/35 
 <!-- non -->
 <!-- gcc -fPIC -c libnss_pool.c -lcurl
 sudo ld -lcurl -x --shared -o /usr/lib64/libnss_pool.so.2 libnss_pool.o -->
