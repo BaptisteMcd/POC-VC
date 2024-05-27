@@ -1,0 +1,29 @@
+{"verifiableCredential":{
+    "@context": ["https://www.w3.org/2018/credentials/v1"],
+    "type": [
+      "NaturalPersonCredential",
+	"VerifiableCredential"
+    ],
+    "issuer": "did:web:test.org",
+    "issuanceDate": "2010-01-01T00:00:00Z",
+    "credentialSubject": {
+      "roles": [
+        {
+          "names": [
+            "EMPLOYEE"
+          ],
+          "target": "did:web:test-marketplace.org"
+        }
+      ],
+      "id": "did:key:z6MkhaSaf1acxXdhsoC3UgxRBoK1wkLUBh6Lq4BnPuVctDos",
+      "email": "toto@toto.net"
+    },
+  "proof": {
+    "type": "Ed25519Signature2020",
+    "created": "2021-11-13T18:19:39Z",
+    "verificationMethod": "https://example.edu/issuers/14#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdOWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+  }
+}
+}
