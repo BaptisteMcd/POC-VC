@@ -12,9 +12,9 @@ USER_ACCESS_TOKEN=$(curl --location --request POST  'http://localhost:8080/realm
 USER_VC_NP=$(curl --location --request POST  'http://localhost:8080/realms/verifiable-credentials/protocol/oid4vc/credential' --header 'Authorization: Bearer '$USER_ACCESS_TOKEN --header 'Content-Type: application/json' --data '
 	{
 		"credential_identifier":"natural-person",
-		"format":"jwt_vc"
+		"format":"ldp_vc"
 	}
-	' | jq -r '.credential')
+' ) #| jq -r '.credential')
 
 echo "User s credentials in base64: $USER_VC_NP "
 echo "User s credentials decoded : $(echo $USER_VC_NP | jq -R 'split(".") | .[0],.[1],.[0] | @base64d | fromjson')"
