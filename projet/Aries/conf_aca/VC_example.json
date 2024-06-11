@@ -1,0 +1,32 @@
+{
+	"options": {
+		"challenge": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+			"created": "2021-12-31T23:59:59Z",
+			"credentialStatus": {
+				"type": "CredentialStatusList2017"
+			},
+			"domain": "example.com",
+			"proofPurpose": "assertionMethod",
+			"proofType": "Ed25519Signature2018",
+			"verificationMethod": "did:example:123456#key-1"
+	},
+		"verifiableCredential":{    "@context": [
+			"https://www.w3.org/2018/credentials/v1",
+			"https://www.w3.org/2018/credentials/examples/v1"
+		],
+		"type":["NaturalPersonCredential","VerifiableCredential"],
+		"issuer":"did:web:test.org",
+		"issuanceDate": "2019-12-11T03:50:55",
+		"credentialSubject":{"roles":[{"names":["EMPLOYEE"],"target":"did:web:test-marketplace.org"}]
+			,"id":"did:key:z6MkhaSaf1acxXdhsoC3UgxRBoK1wkLUBh6Lq4BnPuVctDos",
+			"email":"toto@toto.net"},
+		"proof":{
+			"type":"Ed25519Signature2018",
+			"created": "2019-12-11T03:50:55",
+			"proofPurpose":"assertionMethod",
+			"verificationMethod":"did:key:ZhP_AT2WDbsYhj4GTDIUAxijqeG7GqPDysRQuw4UIGs",
+			"proofValue":"ASDM5ibm0QIamIluEZ4mml0O6iO7LyE7dJnDMZCglGFtGBfGcIEuCSFKlGemXZr0JAitFYFPwvWbQy_GxX5qBw=="}
+		}
+
+
+}
