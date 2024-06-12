@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -fPIC -lcurl -lpq
+CFLAGS = -fPIC -lcurl -lpq -I/usr/include/postgresql/ 
 LDFLAGS = -lcurl -lpq
 
 SRC_DIR = ./src
@@ -20,14 +20,18 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 
 # Pam custom for linux authentication
-TARGET = /lib64/security/pam_custom.so
+# PAM .so directory, depends on your distribution
+PAM_SO_DIR = /lib/x86_64-linux-gnu/security
+#PAM_SO_DIR = /lib64/security
+
+TARGET = $(PAM_SO_DIR)/pam_custom.so
 all: $(TARGET)
 $(TARGET): $(OBJ_FILES)
 	sudo ld -lcurl -lssl -lpq -lcrypto obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/main.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o  obj/jwt.o obj/jwt-openssl.o obj/base64.o -x --shared -o $(TARGET)
 
 
 # Pam custom for postgresql authentication
-TARGET2 = /lib64/security/pam_cpgsql.so
+TARGET2 = $(PAM_SO_DIR)/pam_cpgsql.so
 all: $(TARGET2)
 $(TARGET2): $(OBJ_FILES)
 	sudo ld -lcurl -lssl -lpq -lcrypto obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/main_pg.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o  -x --shared -o $(TARGET2)

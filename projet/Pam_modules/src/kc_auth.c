@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <curl/curl.h>
 #include <stdio.h>
 #include <stdbool.h>
