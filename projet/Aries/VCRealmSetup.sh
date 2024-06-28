@@ -28,6 +28,7 @@ MASTER_TOKEN=$(curl --location --request POST "$MASTER_TOKEN_URL" \
 
 # Post the Realm from the already configured file
 #curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @verifiable-credentials-realm.json
-#curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @.save.jwt_vc.verifiable-credentials-realm.json  
+#curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @JWT.verifiable-credentials-realm.json  
+#curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @SD-JWT.verifiable-credentials-realm.json  
 
 curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @export-entier.json

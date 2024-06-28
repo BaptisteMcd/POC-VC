@@ -119,16 +119,16 @@
     ],
     "users": [
       {
-        "id": "admin",
+        "id": "toto",
         "email": "lol@admin.net",
-        "username": "pello",
+        "username": "toto",
         "enabled": true,
         "emailVerified": true,
         "credentials": [
           {
             "temporary": false,
             "type": "password",
-            "value": "admin"
+            "value": "toto"
           }
         ]
       }

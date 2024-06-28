@@ -1,0 +1,25 @@
+{    
+	"@context": [
+		"https://www.w3.org/2018/credentials/v1",
+		"https://www.w3.org/2018/credentials/examples/v1"
+	],
+	"type":["NaturalPersonCredential","VerifiableCredential"],
+	"issuer":"did:web:test.org",
+	"issuanceDate": "2019-12-11T03:50:55",
+	"credentialSubject":{
+		"@context": {
+			"email": "http://xmlns.com/foaf/0.1/email",
+			"roles": "http://xmlns.com/foaf/0.1/roles"
+		},
+		"roles":[{"roles":["EMPLOYEE"],"target":"did:web:test-marketplace.org"}],
+		"id":"did:key:z6MkhaSaf1acxXdhsoC3UgxRBoK1wkLUBh6Lq4BnPuVctDos",
+		"email":"toto@toto.net"
+	},
+	"proof":{
+		"type":"Ed25519Signature2018",
+		"created": "2019-12-11T03:50:55",
+		"proofPurpose":"assertionMethod",
+		"verificationMethod":"did:key:ZhP_AT2WDbsYhj4GTDIUAxijqeG7GqPDysRQuw4UIGs",
+		"proofValue":"ASDM5ibm0QIamIluEZ4mml0O6iO7LyE7dJnDMZCglGFtGBfGcIEuCSFKlGemXZr0JAitFYFPwvWbQy_GxX5qBw=="
+	}
+}
