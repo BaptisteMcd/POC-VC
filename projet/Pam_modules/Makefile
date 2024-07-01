@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -fPIC -lcurl -lpq -I/usr/include/postgresql/ 
+CFLAGS = -fPIC -lcurl -I/usr/include/postgresql/ -lpq  -lssl -lcrypto
 LDFLAGS = -lcurl -lpq
 
 SRC_DIR = ./src

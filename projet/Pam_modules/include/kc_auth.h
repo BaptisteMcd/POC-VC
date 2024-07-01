@@ -1,4 +1,7 @@
-#include <libpq-fe.h>
+
+//#include <libpq-fe.h>
+#include <postgresql/libpq-fe.h> 
+#include <stdbool.h>
 #ifndef KC_AUTH_H
 #define KC_AUTH_H
 
@@ -166,12 +169,23 @@ void assignAuthorizedRoles(PGconn * conn, const char ** rolesDB, const int nrole
 bool checkUserDB(PGconn *conn, const char *username);
 
 /**
- * Fonction to create a user in the database
- * @param conn the connection to the database
- * @param username the name of the user to create
- * @return true if the user is created
+* Fonction to create a user in the database
+* @param conn the connection to the database
+* @param username the name of the user to create
+* @return true if the user is created
 */
 bool createUserDB(PGconn *conn, const char *username);
+
+
+
+/**
+* Fonction to parse jwt and Selective Disclosure JWT
+* @param sd_jwt the token to parse b64
+* @param jwt the jwt to return 
+* @param sd return of the parsed disclosures
+* @return true if everything went well
+*/
+bool parse_SD_JWT(const char ** sd_jwt, char **jwt, char **sd);
 
 
 #endif /* KC_AUTH_H */

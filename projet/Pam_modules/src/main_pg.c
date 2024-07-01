@@ -10,7 +10,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <curl/curl.h>
-#include <libpq-fe.h>
+#include <postgresql/libpq-fe.h>
+//#include <libpq-fe.h>
 #include "../include/logger.h"
 #include "../include/kc_auth.h"
 // #include "../src/kc_auth.c"

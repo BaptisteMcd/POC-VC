@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <strings.h>
@@ -12,6 +10,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <curl/curl.h>
+//#include <libpq-fe.h>
+#include <postgresql/libpq-fe.h>
 
 #include "../include/logger.h"
 #include "../include/kc_auth.h"
