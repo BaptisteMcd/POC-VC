@@ -2,28 +2,26 @@
 # Post a Schema to accept a credential
 # Ledger needs to be available
 
-curl -X POST http://127.0.0.1:8031/schemas \
+curl -X 'POST' \
+  'http://127.0.0.1:9100/schemas' \
+  -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
-    "attributes": [
-      "roles",
-      "email"
-    ],
-    "schema_name": "NP",
-    "schema_version": "1.0"
+  "attributes": [
+    "roles",
+"email"
+  ],
+  "schema_name": "NP_cred",
+  "schema_version": "1.0"
 }'
-> {
-  "schema_id": "M6HJ1MQHKr98nuxobuzJJg:2:my-schema:1.0",
-  "schema": {
-    "ver": "1.0",
-    "id": "M6HJ1MQHKr98nuxobuzJJg:2:my-schema:1.0",
-    "name": "my-schema",
-    "version": "1.0",
-    "attrNames": [
-      "roles",
-      "email"
-    ],
-    "seqNo": 1006
-  }
-}
 
+# Envoie la définition du crédential
+#curl -X 'POST' \
+#  'http://127.0.0.1:9100/credential-definitions' \
+#  -H 'accept: application/json' \
+#  -H 'Content-Type: application/json' \
+#  -d '{
+#  "schema_id": "PLEVLDPJQMJvPLyX3LgB6S:2:NP_cred:1.0",
+#  "support_revocation": false,
+#  "tag": "default"
+#}'

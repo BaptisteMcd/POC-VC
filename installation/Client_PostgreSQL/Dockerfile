@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:0
 
 # Administration fedora classique
 FROM fedora:latest
