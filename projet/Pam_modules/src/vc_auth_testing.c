@@ -9,10 +9,15 @@
 #include <stdbool.h>
 // #include <stdexcept>
 
+#include <assert.h>
 #include <curl/curl.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+
+
 
 int main() {
 
@@ -50,53 +55,6 @@ int main() {
 
   printf("First disclosure Decoded : %s \n", base64_decode(parsed_sd_jwt[1]));
 
-  const char *certificate =
-      "-----BEGIN "
-      "CERTIFICATE-----MIIE/"
-      "jCCA+"
-      "agAwIBAgISA6pEpAokqYJAJqQPgnCnsHAsMA0GCSqGSIb3DQEBCwUAMDIxCzAJBgNVBAYTAl"
-      "VTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQDEwJSMzAeFw0yMzEyMjQwNTQxMz"
-      "FaFw0yNDAzMjMwNTQxMzBaMCMxITAfBgNVBAMTGGNvbnN1bWVyLmRvbWUuZml3YXJlLmRldj"
-      "CCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANTNb5dpltHsDHLShKAmBuvkoFfU6j"
-      "fuKCLdmS5EG9Tvslhk1rrvIdlO8mfg3NSX0j1HeOXlNafY962LuQbNi2m3Os2VGMgTI2V6Kb"
-      "/wKiDob7k0UYO7+MkZAukAAp4i53TwpGp5af/HS/"
-      "fBppvMfqDo2H9VBWxsYxqqlcXzVWZhovTSxOgDNHuMJgVZJ8Fk3At00xw8YAMRx2tBoS9cuz"
-      "mLJsPSs9a4lFpa9AM95QXJThQAmzqf3Bp8h56LRK8NcSlULRjr+BiLGEGa+"
-      "IyHkJKBXKmwEFTpN9DY00TYFa2ticxKTL4W5uJflhytjn7D3wcejikzpnresyZ5zQutPI0CA"
-      "wEAAaOCAhswggIXMA4GA1UdDwEB/"
-      "wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/"
-      "BAIwADAdBgNVHQ4EFgQUxOKFQ5oAbX4U5ixy4ofvajMkTdAwHwYDVR0jBBgwFoAUFC6zF7dY"
-      "VsuuUAlA5h+"
-      "vnYsUwsYwVQYIKwYBBQUHAQEESTBHMCEGCCsGAQUFBzABhhVodHRwOi8vcjMuby5sZW5jci5"
-      "vcmcwIgYIKwYBBQUHMAKGFmh0dHA6Ly9yMy5pLmxlbmNyLm9yZy8wIwYDVR0RBBwwGoIYY29"
-      "uc3VtZXIuZG9tZS5maXdhcmUuZGV2MBMGA1UdIAQMMAowCAYGZ4EMAQIBMIIBBQYKKwYBBAH"
-      "WeQIEAgSB9gSB8wDxAHcASLDja9qmRzQP5WoC+p0w6xxSActW3SyB2bu/"
-      "qznYhHMAAAGMmo6vgQAABAMASDBGAiEAzJ0YhzMGyKKrkD66BAJQkWOqQS4E32X9jYvVL/"
-      "XjqR4CIQCtrHjnCE7LdIBhESY873ctjvd3izH/F+OeoLocfP/p8wB2AHb/"
-      "iD8KtvuVUcJhzPWHujS0pM27KdxoQgqf5mdMWjp0AAABjJqOsBQAAAQDAEcwRQIhALZ8CQK+"
-      "/Rj8p0krq96y68KED2qN9VWEA/"
-      "diHmc3BSPkAiBhmZRBIDYZ3+"
-      "BwiYQXLmWB34Uc8RCvsEHBHLVsLWJtizANBgkqhkiG9w0BAQsFAAOCAQEAn/"
-      "2qNjtU0v1fQbTnFgrOzvCDnruhWSgqC7t9/vAv+mK5t/"
-      "KEIwMfDAXiaNXofn8me5nXXsfGSxhqNfXpBBfzGA6MEM3Rfqd+D2ie5+oWtNY+5Tdoi/"
-      "jdaww07ZiiFsFPPfPgHZ6LbU/"
-      "jDP4J0VwwYt30+FWMkKecsXKOCt+VUB3tgo0PY3DQOsbmSt9rFAIv8LHa8mQ/"
-      "ikF+sk07BP+CfAjPz/4Rg8AR8A9mtqKMlD3AvvMLxVga/KgEEaB4vGrcK1liBFZF6/"
-      "RRwExeXn0nErcHYGiqeiyYD8sI07QCRv2bv0LYkmEKqB/RxgTWMkltTQUFjUD55Dy1/"
-      "4UTXtM9yg==-----END CERTIFICATE-----";
-  const char *pubkey =
-      "-----BEGIN RSA PUBLIC "
-      "KEY-----"
-      "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1M1vl2mW0ewMctKEoCYG6+"
-      "SgV9TqN+4oIt2ZLkQb1O+yWGTWuu8h2U7yZ+"
-      "Dc1JfSPUd45eU1p9j3rYu5Bs2Labc6zZUYyBMjZXopv/"
-      "AqIOhvuTRRg7v4yRkC6QACniLndPCkanlp/"
-      "8dL98Gmm8x+"
-      "oOjYf1UFbGxjGqqVxfNVZmGi9NLE6AM0e4wmBVknwWTcC3TTHDxgAxHHa0GhL1y7OYsmw9Kz"
-      "1riUWlr0Az3lBclOFACbOp/"
-      "cGnyHnotErw1xKVQtGOv4GIsYQZr4jIeQkoFcqbAQVOk30NjTRNgVra2JzEpMvhbm4l+"
-      "WHK2OfsPfBx6OKTOmet6zJnnNC608jQIDAQAB-----END RSA PUBLIC KEY-----";
-
   const char *jwttocheck =
       "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJHd1pmZHVfeEE1TVlKbUlX"
       "bnJBZHZiRXhNTVdHZHNxZlkycW9xRlZoVlBNIn0."
@@ -129,11 +87,55 @@ int main() {
       "X67YbDKZ0iHtEhU18vaGHE6YpBCY_Kl6DBGEJ_fYiN33sP5hjuRJkaNCpHYj_"
       "Ix6cqJUtZeHSIxez1Q4Jq3KMIVi5Mi5fqpai6hoNcG-mjFbm9jLI1cEh8PQ";
 
+  // pubkey must be in PEM format
+  const char *public_key =
+      "-----BEGIN PUBLIC "
+      "KEY-----"
+      "\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1M1vl2mW0ewMctKEoCYG6+"
+      "SgV9TqN+4oIt2ZLkQb1O+yWGTWuu8h2U7yZ+"
+      "Dc1JfSPUd45eU1p9j3rYu5Bs2Labc6zZUYyBMjZXopv/"
+      "AqIOhvuTRRg7v4yRkC6QACniLndPCkanlp/"
+      "8dL98Gmm8x+"
+      "oOjYf1UFbGxjGqqVxfNVZmGi9NLE6AM0e4wmBVknwWTcC3TTHDxgAxHHa0GhL1y7OYsmw9Kz"
+      "1riUWlr0Az3lBclOFACbOp/"
+      "cGnyHnotErw1xKVQtGOv4GIsYQZr4jIeQkoFcqbAQVOk30NjTRNgVra2JzEpMvhbm4l+"
+      "WHK2OfsPfBx6OKTOmet6zJnnNC608jQIDAQAB\n-----END PUBLIC KEY-----";
   bool valid;
 
-  // ERREUR LORS DE L'UTILISATION D'UN CERTIFICAT ET NON D'UNE CLEE PRIVEE
-  valid = validate_jwt((const char **)&parsed_sd_jwt[0], &certificate);
-  printf("Le jeton est %s.\n", valid ? " valide" : "non valide");
+  printf("\nAvant validation le jeton : %s\n la clée publique : %s\n",
+         parsed_sd_jwt[0], public_key);
+  valid = validate_jwt((const char **)&parsed_sd_jwt[0], &public_key);
+  assert(valid == 1);
+  printf("Le jeton est %s.\n", valid ? " validé" : "non validé");
+
+  char *grants = NULL;
+  grants = extract_grant_jwt((const char **)&parsed_sd_jwt[0], "_sd");
+  assert(grants != NULL);
+  printf("The grants found in the jwt : %s \n", grants);
+
+  char **SD_array = NULL;
+  int nSD_array;
+  valid = json_array_2_array(&grants, &SD_array, &nSD_array);
+  assert((valid = true && nSD_array == 3));
+  PrintArray(SD_array, nSD_array);
+
+
+// the disclosure claimed
+  const char *SD_input =
+      "WyJpX2dTSC1McUYydjBuRnZQTDl0ZUJnIiwgInJvbGVzIiwgW3sibmFtZXMiOiBbIkVNUExP"
+      "WUVFIl0sICJ0YXJnZXQiOiAiZGlkOndlYjp0ZXN0LW1hcmtldHBsYWNlLm9yZyJ9XV0";
+
+
+
+
+  // Print the hash
+  char * hash = NULL;
+  assert(SHA256_sum(SD_input, &hash) == 1);
+  printf("URL-safe Base64 encoded hash: %s\n", hash);
+
+  printf("Comparaison found to 2nd sd signed hash %s \n",strcmp((const char *) hash, SD_array[1]) == 0 ? "same, the disclosure is valid" : "differs disclosure isn't valid");
+  valid = check_claim_validity((const char **) SD_array,nSD_array,SD_input);
+  assert(valid == 1);
   // TODO : free()
   return 0;
 }
