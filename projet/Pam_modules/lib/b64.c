@@ -83,7 +83,7 @@ exit:
 }
 
 const bool validate_jwt(const char **p_token, const char **p_public_key) {
-  bool success = 0;
+  bool success = 1;
 
   // Validate token
   jwt_t *jwt = NULL;
@@ -95,28 +95,30 @@ const bool validate_jwt(const char **p_token, const char **p_public_key) {
 
   if (ret != 0 || jwt_valid == NULL) {
     fprintf(stderr, "failed to allocate jwt_valid\n");
+    success = 0;
     goto finish_valid;
   }
 
   jwt_valid_set_headers(jwt_valid, 1);
   jwt_valid_set_now(jwt_valid, time(NULL));
-  //printf("DEBUG\n%s\n%s\n", *p_token, *p_public_key);
-  /* Decode access_token */
-  ret = jwt_decode(&jwt, *p_token, (const unsigned char *)*p_public_key,
-                   strlen(*p_public_key));
+
+  ret = jwt_decode(&jwt, *p_token, NULL, 0);
 
   if (jwt == NULL) { // working access and id but not refresh
     fprintf(stderr, "Could not decode token\n");
+    success = 0;
     goto finish;
   } else if (ret != 0) { // working access and id but not refresh
     fprintf(stderr, "Signature not verified\n");
+    success = 0;
     goto finish;
   }
-  fprintf(stdout, "token decoded successfully!\n");
-  if (jwt_validate(jwt, jwt_valid) != 0) {
+
+  if (jwt_validate(jwt, jwt_valid) != 0) { // token decoded successfully!
     jwt_dump_fp(jwt, stderr, 1);
     goto finish;
   }
+  success = 0;
 
 finish:
   jwt_free(jwt);
