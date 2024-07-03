@@ -1,0 +1,17 @@
+# see: https://pypi.org/project/ConfigArgParse/ for file format overview
+# run as:
+#    ./bin/aca-py start --arg-file ./demo/demo-args.yaml
+
+label: Verifier
+auto-provision: true
+inbound-transport:
+  - [http, 0.0.0.0, 8030]
+  - [ws, 0.0.0.0, 8040]
+outbound-transport: http
+endpoint: http://192.168.0.48:8030
+admin-insecure-mode: true
+admin: [0.0.0.0, 8031]
+wallet-type: askar
+wallet-name: verif
+wallet-key: verif
+no-ledger: true

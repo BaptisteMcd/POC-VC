@@ -6,10 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../include/kc_auth.h"
-#include "../include/jsmn.h"
 #include "../lib/logger.c"
 #include "../src/kc_auth.c"
-#include <libpq-fe.h>
+#include <postgresql/libpq-fe.h>
+
 // #define CONFIG_FILE "../kc_auth.conf" // Don't forget to include define config file
 
 int main()
@@ -198,7 +198,7 @@ int main()
     }
     
     printf("Comparing roles diffrence from Keycloak and DB\n");
-    assignAuthorizedRoles(conn,list_roles_db,nroles_db,list_roles,nroles);
+    assignAuthorizedRoles(conn,(const char **) list_roles_db,nroles_db,(const char **) list_roles,nroles);
 
     // Cleanup
     cleanupArray(list_roles_db, nroles_db);

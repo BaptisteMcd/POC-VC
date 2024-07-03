@@ -181,8 +181,8 @@ bool createUserDB(PGconn *conn, const char *username);
 /**
 * Fonction to parse jwt and Selective Disclosure JWT
 * @param sd_jwt the token to parse b64
-* @param jwt the jwt to return 
-* @param sd return of the parsed disclosures
+* @param jwt the decoded jwt to return 
+* @param sd return the decoded disclosures
 * @return true if everything went well
 */
 bool parse_SD_JWT(const char ** sd_jwt, char **jwt, char **sd);

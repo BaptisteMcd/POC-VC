@@ -8,12 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-// #include "kc_auth.h"
 #define CONFIG_FILE "/etc/kc_auth.conf"
-#include "../lib/jansson.h"
 #include "../lib/jwt.h"
 #include <postgresql/libpq-fe.h>
-//#include <libpq-fe.h>
 
 #include <openssl/bio.h>
 #include <openssl/evp.h>
@@ -562,7 +559,7 @@ const bool validate_token(const char **p_token, const char **p_public_key,
   jwt_valid_set_now(jwt_valid, time(NULL));
   logger("token validation", "decoding now ...");
   /* Decode access_token */
-  ret = jwt_decode(&jwt, *p_token, *p_public_key, strlen(*p_public_key));
+  ret = jwt_decode(&jwt, *p_token, (const unsigned char * )*p_public_key, strlen(*p_public_key));
   logger("token validation", "decoding done");
   if (ret != 0 || jwt == NULL) { // working access and id but not refresh
     logger("token validation", "invalid access_token");
@@ -789,8 +786,3 @@ bool createUserDB(PGconn *conn, const char *username) {
   return true;
 }
 
-bool parse_SD_JWT(const char **sd_jwt, char **jwt, char **sd) { 
-    
-    
-    return true
-}

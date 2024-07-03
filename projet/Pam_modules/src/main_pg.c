@@ -144,9 +144,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 
     const char *conninfo;
     PGconn *conn;
-    PGresult *res;
-    int nFields;
-    int i, j;
 
     conninfo = "dbname = postgres user=postgres password=postgres";
     /* Crée une connexion à la base de données */
@@ -175,15 +172,13 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
     int nroles_db;
 	// Get the roles contained in the db for the specified user
     getUserRoles(conn, "firstuser", &list_roles_db, &nroles_db);
-    assignAuthorizedRoles(conn,list_roles_db,nroles_db,list_roles_kc,nroles_kc);
+    assignAuthorizedRoles(conn,(const char **) list_roles_db,nroles_db,(const char **) list_roles_kc,nroles_kc);
 
     // Cleanup
     // cleanupArray(list_roles_db, nroles_db);
     // cleanupArray(list_roles_kc, nroles_kc);
     /* ferme la connexion à la base et nettoie */
     PQfinish(conn);
-
-
 
 	logger("pg authenticate good allowing", username);
 	printf("Welcome, %s\n", username);
