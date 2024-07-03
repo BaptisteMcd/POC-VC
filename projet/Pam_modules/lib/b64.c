@@ -193,7 +193,6 @@ bool json_array_2_array(char **json_array, char ***array, int *narray) {
   return true;
 }
 
-// Function to convert the hash to a URL-safe Base64 string
 void base64_url_safe_encode(const unsigned char *input, int length,
                             char *output) {
   // Base64 encode
