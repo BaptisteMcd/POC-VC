@@ -1,4 +1,4 @@
-all : custom pgsql vc
+install : custom pgsql vc
 CC = gcc
 CFLAGS = -fPIC -Wall -lcurl -I/usr/include/postgresql/ -lpq  -lssl -lcrypto
 LDFLAGS = -lcurl -lssl -lpq -lcrypto

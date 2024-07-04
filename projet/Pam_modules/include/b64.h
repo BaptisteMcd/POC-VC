@@ -1,24 +1,30 @@
+/** @file b64.h
+  * @brief My utils to manipulate b64 data and validate SD-JWT tokens 
+  * @author Baptiste Marchand
+ */
+
+
 #ifndef _BASE64_H_d_
 #define _BASE64_H_d_
 
 /**
  * Fonction to print an array of char *
- * @param array the array to print
- * @param n number of elements in the array
+ * @param[in] array the array to print
+ * @param[in] n number of elements in the array
  */
 void PrintArray(char **array, int n);
 
 /**
  * Fonction to decode base64
- * @param cipher the base64 string to decode
+ * @param[in] cipher the base64 string to decode
  * @return the decoded string
  */
 char *base64_decode(char *cipher);
 
 /**
  * Fonction to validate a JWT token
- * @param p_token pointer on a char * representing the token
- * @param p_public_key pointer on a char * representing the public key
+ * @param[in] p_token pointer on a char * representing the token
+ * @param[in] p_public_key pointer on a char * representing the public key
  * @return true if token is valid false otherwise
  */
 const bool validate_jwt(const char **p_token, const char **p_public_key);
@@ -61,17 +67,17 @@ bool check_claim_validity(const char **sd_array, const int nsd_array,
 
 /**
  * Function to convert the hash to a URL-safe Base64 string
- * @param input the hash to convert
- * @param length the length of the hash
- * @param output the output string
+ * @param[in] input the hash to convert
+ * @param[in] length the length of the hash
+ * @param[out] output the output string
  */
 void base64_url_safe_encode(const unsigned char *input, int length,
                             char *output);
 
 /**
  * Function to calculate the SHA256 hash of a string
-    * @param raw_text the string to hash
-    * @param base64_output the output string
+    * @param[in] raw_text the string to hash
+    * @param[out] base64_output the output string
     * @return true if the hash is calculated, false otherwise
  */
 bool SHA256_sum(const char *raw_text, char **base64_output);

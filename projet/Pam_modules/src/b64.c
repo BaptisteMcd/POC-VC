@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../lib/b64.h"
+#include "../include/b64.h"
 #include "../lib/jwt.h"
 
 void PrintArray(char **array, int n) {
@@ -59,7 +59,9 @@ char *base64_decode(char *cipher) {
 
 bool parse_SD_JWT_VC(char *raw_sd_jwt, char ***sd_jwt,
                      unsigned long *nelemenents) {
-  const char *tilde = "~";
+  const char *tilde = "~"; /* Tilde is the Separator of SD-JWT~Disclosure1~Disclosure2~...
+  See
+  */
   char retval = 1;
   unsigned long nparsed = 0;
 

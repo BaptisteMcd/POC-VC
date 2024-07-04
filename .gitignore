@@ -188,3 +188,10 @@ installation/keycloak/data/h2/keycloakdb.trace.db
 !su
 projet/Aries/conf_aca/.VC_example3.json.swp
 projet/Pam_modules/.vc_testing.sh.swp
+
+projet/Pam_modules/latex
+projet/Pam_modules/html
+!projet/Pam_modules/Doxyfile
+projet/Pam_modules/.DoxygenLayout.xml.swp
+projet/Pam_modules/.gdb_history
+projet/Pam_modules/peda-session-vc_testing.txt

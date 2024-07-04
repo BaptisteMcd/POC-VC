@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 // #include "../include/jsmn.h"
 #include "../include/kc_auth.h"
-#include "../lib/b64.h"
+#include "../include/b64.h"
 // #include "../src/kc_auth.c"
 //  #include <libpq-fe.h>
 #include <postgresql/libpq-fe.h>
@@ -15,9 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-
-
 
 int main() {
 
@@ -119,22 +116,21 @@ int main() {
   assert((valid = true && nSD_array == 3));
   PrintArray(SD_array, nSD_array);
 
-
-// the disclosure claimed
+  // the disclosure claimed
   const char *SD_input =
       "WyJpX2dTSC1McUYydjBuRnZQTDl0ZUJnIiwgInJvbGVzIiwgW3sibmFtZXMiOiBbIkVNUExP"
       "WUVFIl0sICJ0YXJnZXQiOiAiZGlkOndlYjp0ZXN0LW1hcmtldHBsYWNlLm9yZyJ9XV0";
 
-
-
-
   // Print the hash
-  char * hash = NULL;
+  char *hash = NULL;
   assert(SHA256_sum(SD_input, &hash) == 1);
   printf("URL-safe Base64 encoded hash: %s\n", hash);
 
-  printf("Comparaison found to 2nd sd signed hash %s \n",strcmp((const char *) hash, SD_array[1]) == 0 ? "same, the disclosure is valid" : "differs disclosure isn't valid");
-  valid = check_claim_validity((const char **) SD_array,nSD_array,SD_input);
+  printf("Comparaison found to 2nd sd signed hash %s \n",
+         strcmp((const char *)hash, SD_array[1]) == 0
+             ? "same, the disclosure is valid"
+             : "differs disclosure isn't valid");
+  valid = check_claim_validity((const char **)SD_array, nSD_array, SD_input);
   assert(valid == 1);
   // TODO : free()
   return 0;
