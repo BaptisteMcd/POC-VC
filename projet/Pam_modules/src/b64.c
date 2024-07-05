@@ -245,3 +245,12 @@ bool check_claim_validity(const char **sd_array, const int nsd_array,
   }
   return false;
 }
+
+bool is_in_array(const char **array, const int narray, const char *claim){
+  for (int i = 0; i < narray; i = i + 1) {
+    if (strcmp((const char *)claim, array[i]) == 0) {
+      return true;
+    }
+  }
+  return false;
+}

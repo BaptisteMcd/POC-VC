@@ -10,4 +10,4 @@ PAM modules to create my own way of authentication on Linux.
 The directory of installation of your created shared object (.so.2) files may vary.  
 Change the variable *PAM_SO_DIR* in your makefile if needed.
 
-
+You will also need to edit the /etc/pam.d/**** file corresponding to your authentification needs (su, sshd ...).

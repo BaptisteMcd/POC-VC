@@ -1,8 +1,8 @@
 // #include <cinttypes>
 #define _GNU_SOURCE
 // #include "../include/jsmn.h"
-#include "../include/kc_auth.h"
 #include "../include/b64.h"
+#include "../include/kc_auth.h"
 // #include "../src/kc_auth.c"
 //  #include <libpq-fe.h>
 #include <postgresql/libpq-fe.h>
@@ -15,9 +15,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../include/logger.h"
 
 int main() {
-
+    logger("bonjour", "bonjour");
   char full_sd_jwt[] =
       "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJHd1pmZHVfeEE1TVlKbUlX"
       "bnJBZHZiRXhNTVdHZHNxZlkycW9xRlZoVlBNIn0."
@@ -121,17 +122,41 @@ int main() {
       "WyJpX2dTSC1McUYydjBuRnZQTDl0ZUJnIiwgInJvbGVzIiwgW3sibmFtZXMiOiBbIkVNUExP"
       "WUVFIl0sICJ0YXJnZXQiOiAiZGlkOndlYjp0ZXN0LW1hcmtldHBsYWNlLm9yZyJ9XV0";
 
-  // Print the hash
+  // The disclosure need to have the role "EMPLOYEE" as an example
+  char *decoded_SD = NULL;
+  decoded_SD = base64_decode((char *)SD_input);
+  printf("The decoded SD is %s", decoded_SD);
+
+  // The array needs to contain role and EMPLOYEE
+
+  char **SD_json = NULL;
+  int nSD_json;
+  valid = json_array_2_array(&decoded_SD, &SD_json, &nSD_json);
+  assert(valid == 1);
+
+  valid = is_in_array((const char **)SD_json, nSD_json, "roles");
+  printf("The claim role is %s\n", valid ? "present" : "absent");
+  assert(valid == 1);
+
+  valid = is_in_array((const char **)SD_json, nSD_json, "EMPLOYEE");
+  printf("The claim EMPLOYEE is %s\n", valid ? "present" : "absent");
+  assert(valid == 1);
+
+  PrintArray(SD_json, nSD_json);
+
   char *hash = NULL;
   assert(SHA256_sum(SD_input, &hash) == 1);
   printf("URL-safe Base64 encoded hash: %s\n", hash);
 
+  valid = strcmp((const char *)hash, SD_array[1]) == 0;
+  assert(valid == 1);
+
   printf("Comparaison found to 2nd sd signed hash %s \n",
-         strcmp((const char *)hash, SD_array[1]) == 0
-             ? "same, the disclosure is valid"
-             : "differs disclosure isn't valid");
+         valid ? "same, the disclosure is valid"
+               : "differs disclosure isn't valid");
   valid = check_claim_validity((const char **)SD_array, nSD_array, SD_input);
   assert(valid == 1);
-  // TODO : free()
+  
+  // TODO : free() les pointeurs
   return 0;
 }

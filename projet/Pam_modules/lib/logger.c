@@ -9,11 +9,11 @@ void logger(const char *tag, const char *message)
 {
 	time_t now;
 	time(&now);
-	FILE *pAuditLogFile;
+	FILE *pAuditLogFile = NULL;
 	pAuditLogFile = fopen(LOG_FILE_PATH, "a"); // a mode so only append
 	if (pAuditLogFile == NULL)
 	{
-		perror("Error opening log file.");
+		perror("Error opening log file.\n");
 	}
 	else
 	{

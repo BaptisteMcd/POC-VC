@@ -1,8 +1,8 @@
 /** @file b64.h
-  * @brief My utils to manipulate b64 data and validate SD-JWT tokens 
-  * @author Baptiste Marchand
+ * @brief My utils to manipulate b64 data and validate SD-JWT tokens
+ * @author Baptiste Marchand
  */
-
+#include <stdbool.h>
 
 #ifndef _BASE64_H_d_
 #define _BASE64_H_d_
@@ -48,7 +48,8 @@ bool parse_SD_JWT_VC(char *raw_sd_jwt, char ***sd_jwt,
 char *extract_grant_jwt(const char **p_token, const char *grant);
 
 /**
- * Fonction to extract a claim from a jwt
+ * Fonction to convert claim json array as a string into a real c array (char
+ * **)
  * @param[in] json_array the json array to parse
  * @param[out] array the array to fill
  * @param[out] narray the number of elements in the array
@@ -76,10 +77,19 @@ void base64_url_safe_encode(const unsigned char *input, int length,
 
 /**
  * Function to calculate the SHA256 hash of a string
-    * @param[in] raw_text the string to hash
-    * @param[out] base64_output the output string
-    * @return true if the hash is calculated, false otherwise
+ * @param[in] raw_text the string to hash
+ * @param[out] base64_output the output string
+ * @return true if the hash is calculated, false otherwise
  */
 bool SHA256_sum(const char *raw_text, char **base64_output);
+
+/**
+ * Function check if string is inside an array
+ * @param[in] array the array to check
+ * @param[in] narray the number of elements in the array
+ * @param[in] claim the claim to check
+ *@return true if the claim is inside the array, false otherwise
+ */
+bool is_in_array(const char **array, const int narray, const char *claim);
 
 #endif /* _BASE64_H_d_ */
