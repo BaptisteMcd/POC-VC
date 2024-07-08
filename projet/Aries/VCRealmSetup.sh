@@ -7,7 +7,7 @@
 # Temporary command is 
 # docker run -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:nightly start-dev --log-level=DEBUG --features="oid4vc-vci"
 
-
+PORT=8090
 # Master variables
 MASTER_USERNAME=admin
 MASTER_PASSWORD=admin
@@ -15,7 +15,7 @@ REALM_NAME=verifiable-credentials
 CLIENT_NAME=oidc-client
 
 # Get the URL of the master token from .well-known endpoint
-MASTER_TOKEN_URL=$(curl --location --request GET 'http://localhost:8080/realms/master/.well-known/openid-configuration' | jq -r '.token_endpoint')
+MASTER_TOKEN_URL=$(curl --location --request GET 'http://localhost:'$PORT'/realms/master/.well-known/openid-configuration' | jq -r '.token_endpoint')
 
 #Get the Master Token
 MASTER_TOKEN=$(curl --location --request POST "$MASTER_TOKEN_URL" \
@@ -27,8 +27,8 @@ MASTER_TOKEN=$(curl --location --request POST "$MASTER_TOKEN_URL" \
 	# echo 'MASTER_TOKEN = '$MASTER_TOKEN
 
 # Post the Realm from the already configured file
-#curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @verifiable-credentials-realm.json
-#curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @JWT.verifiable-credentials-realm.json  
-#curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @SD-JWT.verifiable-credentials-realm.json  
+#curl -v  --location --request POST  'http://localhost:'$PORT'/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @verifiable-credentials-realm.json
+#curl -v  --location --request POST  'http://localhost:'$PORT'/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @JWT.verifiable-credentials-realm.json  
+curl -v  --location --request POST  'http://localhost:'$PORT'/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @SD-JWT.verifiable-credentials-realm.json  
 
-curl -v  --location --request POST  'http://localhost:8080/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @export-entier.json
+#curl -v  --location --request POST  'http://localhost:'$PORT'/admin/realms' -H "Authorization: Bearer "$MASTER_TOKEN -H "Content-Type: application/json" -d @export-entier.json
