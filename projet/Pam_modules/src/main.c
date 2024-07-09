@@ -23,12 +23,7 @@ void cleanup_pointer(pam_handle_t *handle, void *data, int error_status)
 	free(data);
 } // Cleanup function
 
-void change_pass(const char *, const char *);
 
-void change_pass(const char *username, const char *password)
-{
-	// TO REWRITE
-}
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
 								   const char **argv)
@@ -178,45 +173,5 @@ PAM_EXTERN int pam_sm_close_session(pam_handle_t *pamh, int flags, int argc,
 PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc,
 								const char **argv)
 {
-	printf("pam_sm_chauthtok \n");
-	const char *username;
-	const char *cur_password;
-	const char *new_password;
-	/* We always return PAM_SUCCESS for the preliminary check */
-	if (flags & PAM_PRELIM_CHECK)
-	{
-		return PAM_SUCCESS;
-	}
-
-	/* Get the username */
-	pam_get_item(pamh, PAM_USER, (const void **)&username);
-	logger("pam_sm_chauthtok", username);
-
-	/* We're not handling the PAM_CHANGE_EXPIRED_AUTHTOK specifically
-	 * since we do not have expiry dates for our passwords. */
-	if ((flags & PAM_UPDATE_AUTHTOK) ||
-		(flags & PAM_CHANGE_EXPIRED_AUTHTOK))
-	{
-		/* Ask the application for the password. From this module function, pam_get_authtok()
-		 * with item type PAM_AUTHTOK asks for the new password with the retype. Therefore,
-		 * to ask for the current password we must use PAM_OLDAUTHTOK. */
-		pam_get_authtok(pamh, PAM_OLDAUTHTOK, &cur_password, "Insert current password: ");
-
-		/* Check if the current password is correct */
-		char *id_token;
-		char *access_token;
-		char *refresh_token;
-
-		if (authentification_utilisateur(username, cur_password, &access_token, &id_token, &refresh_token)) // to rewrite right here
-		{
-			pam_get_authtok(pamh, PAM_AUTHTOK, &new_password,
-							"New password: ");
-			change_pass(username, new_password);
-		}
-		else
-		{
-			return PAM_PERM_DENIED;
-		}
-	}
 	return PAM_SUCCESS;
 }

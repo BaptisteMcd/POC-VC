@@ -3,7 +3,7 @@
  * @author Baptiste Marchand
  */
 #include <stdbool.h>
-
+#include <stddef.h>
 #ifndef _BASE64_H_d_
 #define _BASE64_H_d_
 
@@ -14,12 +14,13 @@
  */
 void PrintArray(char **array, int n);
 
-/**
- * Fonction to decode base64
- * @param[in] cipher the base64 string to decode
- * @return the decoded string
- */
-char *base64_decode(char *cipher);
+/** 
+* Fonction to decode a base64 string
+* @param[in] base64_input the base64 string to decode
+* @param[out] output the decoded string
+* @param[out] length the length of the decoded string
+*/
+int base64_url_safe_decode(const char *base64_input, char **output, int *length);
 
 /**
  * Fonction to validate a JWT token
@@ -37,7 +38,7 @@ const bool validate_jwt(const char **p_token, const char **p_public_key);
  * disclosures)
  */
 bool parse_SD_JWT_VC(char *raw_sd_jwt, char ***sd_jwt,
-                     unsigned long *nelemenents);
+                     int *nelemenents);
 
 /**
  * Fonction to extract a grant from a jwt
@@ -92,4 +93,27 @@ bool SHA256_sum(const char *raw_text, char **base64_output);
  */
 bool is_in_array(const char **array, const int narray, const char *claim);
 
+/**
+* Function to retrieve the public key from a file
+* @param[in] filepath the path to the file containing the public key
+* @return char * public key, needs to be freed
+*/ char *get_pub_key(const char *filepath);
+
+/**
+* Function to check the username disclosure is in a set of disclosed claims
+* @param[in] array the array of disclosed claims 
+* @param[in] narray the number of disclosed claims
+* @param[in] username the username to check
+* @param[out] index the index of the corresponding SD claim in the array
+ */
+bool user_in_disclosures(const char **array, const int narray, const char *username, int * index);
+
+/**
+* Function to decode all base 64 disclosure of a VCP
+* @param[in] parsed_sd_jwt the parsed jwt token
+* @param[in] ndisclosures the number of disclosures
+* @param[out] decoded_SD the decoded SDs
+* @param[out] length the number of decoded SDs
+ */
+bool decode_all_sd(const char **parsed_sd_jwt, const int ndisclosures, char ***decoded_SD, int *length);
 #endif /* _BASE64_H_d_ */

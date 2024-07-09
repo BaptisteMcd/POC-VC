@@ -8,11 +8,11 @@ USER_ACCESS_TOKEN=$(curl --location --request POST  'http://localhost:'$PORT'/re
 # Retrieve the VC of a Natural Person form 
 
 USER_VC_NP=$(curl --location --request POST  'http://localhost:'$PORT'/realms/verifiable-credentials/protocol/oid4vc/credential' --header 'Authorization: Bearer '$USER_ACCESS_TOKEN --header 'Content-Type: application/json' --data '
-	{
-		"credential_identifier":"verifiable-credential",
+		{
+		"credential_identifier":"admin-credential",
 		"format":"vc+sd-jwt"
-	}
-' ) 
+		}
+		' ) 
 USER_VC_NP=$(jq -r '.credential' <<< "$USER_VC_NP")
 # Remove line if needed
 echo "User s credentials in base64: $USER_VC_NP "

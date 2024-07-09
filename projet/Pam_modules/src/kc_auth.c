@@ -123,7 +123,7 @@ const bool write_tokens(const char *filename, const char *access_token,
 
 const bool read_tokens(const char *filename, char **access_token,
                        char **refresh_token, char **id_token) {
-  FILE *file;
+  FILE *file = NULL;
   file = fopen(filename, "r");
   if (file == NULL) {
     printf("Error opening file for reading\n");
@@ -140,6 +140,27 @@ const bool read_tokens(const char *filename, char **access_token,
       *refresh_token = strdup(val);
     } else if (strcmp(name, "id_token") == 0) {
       *id_token = strdup(val);
+    }
+  }
+  fclose(file);
+  return true;
+}
+
+const bool read_token(const char *filename, char **p_token,
+                      const char *search_name) {
+  FILE *file = NULL;
+  file = fopen(filename, "r");
+  if (file == NULL) {
+    printf("Error opening %s for reading\n", filename);
+    logger("read_token", "Error opening file for reading");
+    return false;
+  }
+  char val[2048];
+  char name[128];
+  while (fscanf(file, "%127[^=]=%2047[^\n]%*[\n]", name, val) == 2) {
+    if (strcmp(name, search_name) == 0) {
+      *p_token = strdup(val);
+      break;
     }
   }
   fclose(file);
@@ -190,7 +211,6 @@ bool authentification_utilisateur(const char *user, const char *pass,
 
   long response_code;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-  // printf((int) response_code);
   if (res != CURLE_OK) {
     fprintf(stderr, "curl_easy_perform() failed: %s\n",
             curl_easy_strerror(res));
@@ -559,7 +579,8 @@ const bool validate_token(const char **p_token, const char **p_public_key,
   jwt_valid_set_now(jwt_valid, time(NULL));
   logger("token validation", "decoding now ...");
   /* Decode access_token */
-  ret = jwt_decode(&jwt, *p_token, (const unsigned char * )*p_public_key, strlen(*p_public_key));
+  ret = jwt_decode(&jwt, *p_token, (const unsigned char *)*p_public_key,
+                   strlen(*p_public_key));
   logger("token validation", "decoding done");
   if (ret != 0 || jwt == NULL) { // working access and id but not refresh
     logger("token validation", "invalid access_token");
@@ -609,14 +630,13 @@ const bool parse_role_claims(const char **p_claims, const char *origin,
     logger("Existance utilisateur", "Failed to parse JSON");
   } else { // Parsing JSON
     for (int i = 1; i < r; i++) {
-      if (jsoneq(*p_claims, &t[i], "roles") == 0) { // Found Role identifier
-        if (t[i + 1].type != JSMN_ARRAY ||
-            jsoneq(*p_claims, &t[i - 2], CLIENT_ID) !=
-                0) { // wrong place or not the targeted origin
+      if (jsoneq(*p_claims, &t[i], origin) == 0) { // Found Role identifier
+        if (t[i + 1].type !=
+            JSMN_ARRAY) { // wrong place or not the targeted origin
           printf("Wrong place or not the targeted origin\n");
           continue;
         }
-        printf("Found the right place\n");
+        // printf("Found the right place\n");
         success = true;
         *nretVal = t[i + 1].size;
         *p_retVal = (char **)malloc(
@@ -624,9 +644,9 @@ const bool parse_role_claims(const char **p_claims, const char *origin,
             (*nretVal)); // Allocate the array of pointers of chars
         for (int j = 0; j < *nretVal; j++) {
           jsmntok_t *g = &t[i + j + 2];
-          printf(" *%.*s\n", g->end - g->start, *p_claims + g->start);
-          // allocate and put in the array of pointer a pointer to the allocated
-          // array of char
+          // printf(" *%.*s\n", g->end - g->start, *p_claims + g->start);
+          //  allocate and put in the array of pointer a pointer to the
+          //  allocated array of char
           asprintf(&(*p_retVal)[j], "%.*s", g->end - g->start,
                    *p_claims + g->start);
         }
@@ -785,4 +805,3 @@ bool createUserDB(PGconn *conn, const char *username) {
   PQclear(res);
   return true;
 }
-

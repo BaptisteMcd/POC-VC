@@ -4,7 +4,10 @@
 #include <openssl/buffer.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
+#include <openssl/pem.h>
 #include <openssl/sha.h>
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -20,50 +23,12 @@ void PrintArray(char **array, int n) {
   }
 }
 
-/***********************************************************
- * Base64 library implementation                            *
- * @author Ahmed Elzoughby                                  *
- * @date July 23, 2017                                      *
- ***********************************************************/
-
-char base46_map[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
-                     'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
-                     'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
-                     'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
-                     's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2',
-                     '3', '4', '5', '6', '7', '8', '9', '+', '/'};
-char *base64_decode(char *cipher) {
-
-  char counts = 0;
-  char buffer[4];
-  char *plain = malloc(strlen(cipher) * 3 / 4);
-  int i = 0, p = 0;
-
-  for (i = 0; cipher[i] != '\0'; i++) {
-    char k;
-    for (k = 0; k < 64 && base46_map[k] != cipher[i]; k++)
-      ;
-    buffer[counts++] = k;
-    if (counts == 4) {
-      plain[p++] = (buffer[0] << 2) + (buffer[1] >> 4);
-      if (buffer[2] != 64)
-        plain[p++] = (buffer[1] << 4) + (buffer[2] >> 2);
-      if (buffer[3] != 64)
-        plain[p++] = (buffer[2] << 6) + buffer[3];
-      counts = 0;
-    }
-  }
-  plain[p] = '\0'; /* string padding character */
-  return plain;
-}
-
-bool parse_SD_JWT_VC(char *raw_sd_jwt, char ***sd_jwt,
-                     unsigned long *nelemenents) {
-  const char *tilde = "~"; /* Tilde is the Separator of SD-JWT~Disclosure1~Disclosure2~...
-  See
+bool parse_SD_JWT_VC(char *raw_sd_jwt, char ***sd_jwt, int *nelemenents) {
+  const char *tilde = "~"; /* Tilde is the Separator of
+  SD-JWT~Disclosure1~Disclosure2~... See
   */
   char retval = 1;
-  unsigned long nparsed = 0;
+  int nparsed = 0;
 
   char *toke = strtok(raw_sd_jwt, tilde);
   while (toke != NULL) {
@@ -85,6 +50,41 @@ exit:
   return retval;
 }
 
+int base64_url_safe_decode(const char *base64_input, char **output,
+                           int *length) {
+  BIO *b64, *bmem;
+  int padding = (4 - strlen(base64_input) % 4) % 4;
+
+  char *buffer = malloc(strlen(base64_input) + padding + 1);
+  if (buffer == NULL) {
+    return 0;
+  }
+  strcpy(buffer, base64_input);
+  for (int i = 0; i < padding; ++i) {
+    strcat(buffer, "=");
+  }
+
+  int buffer_length = strlen(buffer);
+  *output = malloc(buffer_length + 1);
+  if (*output == NULL) {
+    free(buffer);
+    return 0;
+  }
+
+  b64 = BIO_new(BIO_f_base64());
+  BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+  bmem = BIO_new_mem_buf(buffer, buffer_length);
+  bmem = BIO_push(b64, bmem);
+
+  *length = BIO_read(bmem, *output, buffer_length);
+  (*output)[*length] = '\0';
+
+  BIO_free_all(bmem);
+  free(buffer);
+
+  return *length > 0;
+}
+
 const bool validate_jwt(const char **p_token, const char **p_public_key) {
   bool success = 1;
 
@@ -104,7 +104,6 @@ const bool validate_jwt(const char **p_token, const char **p_public_key) {
 
   jwt_valid_set_headers(jwt_valid, 1);
   jwt_valid_set_now(jwt_valid, time(NULL));
-
   ret = jwt_decode(&jwt, *p_token, (const unsigned char *)*p_public_key,
                    (int)strlen((const char *)*p_public_key));
 
@@ -130,6 +129,29 @@ finish:
   jwt_free(jwt);
 finish_valid:
   jwt_valid_free(jwt_valid);
+  return success;
+}
+
+bool decode_all_sd(const char **parsed_sd_jwt, const int ndisclosures,
+                   char ***decoded_SD, int *length) {
+  bool success = 1;
+  for (int i = 1; i < ndisclosures; i = i + 1) {
+    char *decoded = NULL;
+    int len;
+    base64_url_safe_decode(parsed_sd_jwt[i], &decoded, &len);
+    if (decoded == NULL) {
+      success = 0;
+      goto finish;
+    }
+    *decoded_SD = realloc(*decoded_SD, (i) * sizeof(char *));
+    if (*decoded_SD == NULL) {
+      success = 0;
+      goto finish;
+    }
+    (*decoded_SD)[i - 1] = decoded;
+  }
+  *length = ndisclosures - 1;
+finish:
   return success;
 }
 
@@ -174,7 +196,6 @@ bool json_array_2_array(char **json_array, char ***array, int *narray) {
 
   token = strtok(*json_array, "\"");
   while (token != NULL) {
-    printf("N %d Token is : %s ", i, token);
     if (i % 2 == 1) { // string
       *array = realloc(*array, (*narray + 1) * sizeof(char *));
       if (*array == NULL) {
@@ -186,10 +207,8 @@ bool json_array_2_array(char **json_array, char ***array, int *narray) {
       }; // adding string to array
 
       *narray = *narray + 1;
-      printf("adding string to array");
     }
     i = i + 1;
-    printf("\n");
     token = strtok(NULL, "\"");
   }
   return true;
@@ -237,8 +256,6 @@ bool check_claim_validity(const char **sd_array, const int nsd_array,
   char *hash = NULL;
   SHA256_sum(claim, &hash);
   for (int i = 0; i < nsd_array; i = i + 1) {
-    printf("hash is %s\n",hash);
-    printf("sd is %s\n",sd_array[i]);
     if (strcmp((const char *)hash, sd_array[i]) == 0) {
       return true;
     }
@@ -246,11 +263,103 @@ bool check_claim_validity(const char **sd_array, const int nsd_array,
   return false;
 }
 
-bool is_in_array(const char **array, const int narray, const char *claim){
+bool is_in_array(const char **array, const int narray, const char *claim) {
   for (int i = 0; i < narray; i = i + 1) {
     if (strcmp((const char *)claim, array[i]) == 0) {
       return true;
     }
   }
   return false;
+}
+
+bool user_in_disclosures(const char **array, const int narray,
+                         const char *username, int * index) {
+  for (int i = 0; i < narray; i = i + 1) {
+    if (strstr((const char *)array[i], "username") != NULL) {
+      if (strstr((const char *)array[i], username) != NULL) {
+        *index = i;
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+  return false;
+}
+
+char *get_pub_key(const char *filepath) {
+  BIO *bio = NULL;
+  X509 *cert = NULL;
+  EVP_PKEY *pkey = NULL;
+  BIO *pub_bio = NULL;
+  BUF_MEM *pub_key_mem = NULL;
+  char *output = NULL;
+
+  OpenSSL_add_all_algorithms();
+
+  bio = BIO_new(BIO_s_file());
+  if (bio == NULL) {
+    fprintf(stderr, "Failed to create BIO\n");
+    goto cleanup;
+  }
+
+  if (BIO_read_filename(bio, filepath) <= 0) {
+    fprintf(stderr, "Failed to read certificate file\n");
+    goto cleanup;
+  }
+
+  // Load the certificate
+  cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+  if (cert == NULL) {
+    fprintf(stderr, "Failed to load certificate\n");
+    goto cleanup;
+  }
+
+  pkey = X509_get_pubkey(cert);
+  if (pkey == NULL) {
+    fprintf(stderr, "Failed to extract public key\n");
+    goto cleanup;
+  }
+
+  // Create a new BIO to hold the public key
+  pub_bio = BIO_new(BIO_s_mem());
+  if (pub_bio == NULL) {
+    fprintf(stderr, "Failed to create BIO for public key\n");
+    goto cleanup;
+  }
+  if (!PEM_write_bio_PUBKEY(pub_bio, pkey)) {
+    fprintf(stderr, "Failed to write public key to BIO\n");
+    goto cleanup;
+  }
+
+  // Get the data from the BIO
+  BIO_get_mem_ptr(pub_bio, &pub_key_mem);
+  if (pub_key_mem == NULL) {
+    fprintf(stderr, "Failed to get public key data from BIO\n");
+    goto cleanup;
+  }
+
+  output = (char *)malloc(pub_key_mem->length + 1);
+  if (output == NULL) {
+    fprintf(stderr, "Failed to allocate memory for public key\n");
+    goto cleanup;
+  }
+
+  // Copy the public key to the output buffer
+  memcpy(output, pub_key_mem->data, pub_key_mem->length);
+  output[pub_key_mem->length] = '\0'; // Null-terminate the output buffer
+
+cleanup:
+  if (pub_bio)
+    BIO_free(pub_bio);
+  if (pkey)
+    EVP_PKEY_free(pkey);
+  if (cert)
+    X509_free(cert);
+  if (bio)
+    BIO_free_all(bio);
+  EVP_cleanup();
+  CRYPTO_cleanup_all_ex_data();
+
+  return output;
 }

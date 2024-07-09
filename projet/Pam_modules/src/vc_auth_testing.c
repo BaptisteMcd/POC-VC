@@ -20,8 +20,9 @@
 #define TOKEN_FILE ".token"
 #define TOKEN_FIELD "sd_jwt_token"
 
-//#define TRUSTED_CERTIFICATE_PATH "/etc/ssl/certs/keycloak-vc.pem"
-#define TRUSTED_CERTIFICATE_PATH "/etc/ssl/certs/keycloak_verifiable-credentials.pem"
+// #define TRUSTED_CERTIFICATE_PATH "/etc/ssl/certs/keycloak-vc.pem"
+#define TRUSTED_CERTIFICATE_PATH                                               \
+  "/etc/ssl/certs/keycloak_verifiable-credentials.pem"
 
 int main() {
   char full_sd_jwt[] =
@@ -47,7 +48,7 @@ int main() {
 
   char *jwt = NULL;
   char **parsed_sd_jwt = NULL;
-  unsigned long ndisclosures;
+  int ndisclosures;
 
   char *sd_jwt2 = NULL;
   read_token(".token", &sd_jwt2, "sd_jwt_token");
@@ -55,23 +56,21 @@ int main() {
 
   parse_SD_JWT_VC(sd_jwt2, &parsed_sd_jwt, &ndisclosures);
 
-  // printf("Voici le jwt : %s \n", jwt);
   printf("Voici les chaines de char du tableau : \n");
   PrintArray(parsed_sd_jwt, ndisclosures);
-  // assert(ndisclosures == 4);
-
-  printf("First disclosure Decoded : %s \n", base64_decode(parsed_sd_jwt[1]));
 
   // pubkey must be in PEM format
   char *public_key;
   size_t lenpubkey;
 
   public_key = get_pub_key(TRUSTED_CERTIFICATE_PATH);
-printf("The public key is : %s\n", public_key);
+  printf("The public key is : %s\n", public_key);
   bool valid;
-  valid = validate_jwt((const char **)&parsed_sd_jwt[0], &public_key);
+  valid = validate_jwt((const char **)&parsed_sd_jwt[0],
+                       (const char **)&public_key);
   assert(valid == 1);
-  printf("Le jeton est %s avec le certificat de confiance : %s.\n", valid ? " validé" : "non validé",TRUSTED_CERTIFICATE_PATH);
+  printf("Le jeton est %s avec le certificat de confiance : %s.\n",
+         valid ? " validé" : "non validé", TRUSTED_CERTIFICATE_PATH);
 
   char *grants = NULL;
   grants = extract_grant_jwt((const char **)&parsed_sd_jwt[0], "_sd");
@@ -81,24 +80,24 @@ printf("The public key is : %s\n", public_key);
   char **SD_array = NULL;
   int nSD_array;
   valid = json_array_2_array(&grants, &SD_array, &nSD_array);
-  assert((valid = true && nSD_array == 3));
+  assert((valid = true && nSD_array == 4));
+  printf("The grants inside the jwt are : \n");
   PrintArray(SD_array, nSD_array);
 
-  // the disclosure claimed
-  const char *SD_input =
-      "WyJpX2dTSC1McUYydjBuRnZQTDl0ZUJnIiwgInJvbGVzIiwgW3sibmFtZXMiOiBbIkVNUExP"
-      "WUVFIl0sICJ0YXJnZXQiOiAiZGlkOndlYjp0ZXN0LW1hcmtldHBsYWNlLm9yZyJ9XV0";
-
   // The disclosure need to have the role "EMPLOYEE" as an example
-  char *decoded_SD = NULL;
-  decoded_SD = base64_decode((char *)parsed_sd_jwt[1]);
-  printf("The decoded SD is %s", decoded_SD);
+  char **decoded_SD = NULL;
+  int length;
+  // base64_url_safe_decode(parsed_sd_jwt[1], &decoded_SD, &length);
 
-  // The array needs to contain role and EMPLOYEE
+  valid = decode_all_sd((const char **)parsed_sd_jwt, ndisclosures, &decoded_SD,
+                        &length);
+
+  printf("The decoded SDs are : \n");
+  PrintArray(decoded_SD, length);
 
   char **SD_json = NULL;
   int nSD_json;
-  valid = json_array_2_array(&decoded_SD, &SD_json, &nSD_json);
+  valid = json_array_2_array(&decoded_SD[0], &SD_json, &nSD_json);
   assert(valid == 1);
 
   valid = is_in_array((const char **)SD_json, nSD_json, "roles");
@@ -115,15 +114,28 @@ printf("The public key is : %s\n", public_key);
   assert(SHA256_sum(parsed_sd_jwt[1], &hash) == 1);
   printf("URL-safe Base64 encoded hash: %s\n", hash);
 
-  valid = strcmp((const char *)hash, SD_array[1]) == 0;
+  valid = strcmp((const char *)hash, SD_array[0]) == 0;
   assert(valid == 1);
 
   printf("Comparaison found to 2nd sd signed hash %s \n",
          valid ? "same, the disclosure is valid"
                : "differs disclosure isn't valid");
-  valid = check_claim_validity((const char **)SD_array, nSD_array, parsed_sd_jwt[1]);
-  assert(valid == 1);
+  PrintArray(SD_array, nSD_array);
+  int index;
+  valid =
+      user_in_disclosures((const char **)decoded_SD, length, "toto", &index);
 
-  // TODO : free() les pointeurs
+  assert(valid == 1);
+  printf("The user toto is in the disclosed claims, claim index %d\n", index);
+
+  // need to check if that claim is actually in the _sd
+  valid = check_claim_validity((const char **)SD_array, nSD_array,
+                               parsed_sd_jwt[index]);
+
+  assert(valid == 1);
+  printf("The claim is in the _sd of the jwt, the user is verified\n");
+  // TODO
+  //  checker les grants exacts
+  //  TODO : free() les pointeurs
   return 0;
 }

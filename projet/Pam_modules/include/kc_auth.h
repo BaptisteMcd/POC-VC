@@ -194,4 +194,6 @@ bool createUserDB(PGconn *conn, const char *username);
 bool parse_SD_JWT(const char ** sd_jwt, char **jwt, char **sd);
 
 
+const bool read_token(const char * filename, char **p_token, const char * name);
+
 #endif /* KC_AUTH_H */
