@@ -103,10 +103,11 @@ bool is_in_array(const char **array, const int narray, const char *claim);
 * Function to check the username disclosure is in a set of disclosed claims
 * @param[in] array the array of disclosed claims 
 * @param[in] narray the number of disclosed claims
-* @param[in] username the username to check
+* @param[in] claim the name of the claim to check
+* @param[in] value the value of the claim to check
 * @param[out] index the index of the corresponding SD claim in the array
  */
-bool user_in_disclosures(const char **array, const int narray, const char *username, int * index);
+bool check_claim_in_disclosures(const char **array, const int narray,const char *claim, const char *value, int * index);
 
 /**
 * Function to decode all base 64 disclosure of a VCP
@@ -116,4 +117,8 @@ bool user_in_disclosures(const char **array, const int narray, const char *usern
 * @param[out] length the number of decoded SDs
  */
 bool decode_all_sd(const char **parsed_sd_jwt, const int ndisclosures, char ***decoded_SD, int *length);
+
+
+
+bool receive_jwt_socket(char **jwt, unsigned short port);
 #endif /* _BASE64_H_d_ */

@@ -1,4 +1,6 @@
 #define _GNU_SOURCE
+#include "../include/logger.h"
+#include <arpa/inet.h>
 #include <assert.h>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
@@ -13,9 +15,103 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "../include/b64.h"
 #include "../lib/jwt.h"
+
+#define BUFFER_SIZE 1500 // 64 KB
+
+bool receive_jwt_socket(char **jwt, unsigned short port) {
+  int server_fd, new_socket;
+  struct sockaddr_in address;
+  int addrlen = sizeof(address);
+  char buffer[BUFFER_SIZE];
+  int retval = 0;
+  logger("Socket", "Starting socket\n");
+  // Create socket file descriptor
+  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    perror("socket failed");
+    logger("Socket", "Socket failed\n");
+    return 0;
+  }
+
+  // Bind to the port
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(port);
+
+  if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    perror("bind failed");
+    logger("Socket", "Bind failed\n");
+    goto error_socket;
+  }
+  logger("Socket", "Binded to port\n");
+
+  // Listen for incoming connections
+  if (listen(server_fd, 3) < 0) {
+    logger("Socket", "Listen failed\n");
+    perror("listen");
+    goto error_server;
+  }
+
+  // Accept an incoming connection
+  if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
+                           (socklen_t *)&addrlen)) < 0) {
+    perror("accept");
+    goto error_server;
+  }
+  // accepted a conn
+  logger("Socket", "Accepted a connection\n");
+  // Initialize a buffer to accumulate the incoming JWT
+  char *jwt_buffer = malloc(BUFFER_SIZE);
+  if (jwt_buffer == NULL) {
+    perror("malloc failed");
+    goto error_server;
+  }
+  jwt_buffer[0] = '\0';
+  logger("Socket", "Buffer initialized\n");
+
+  // Read data from the socket
+  int total_read = 0;
+  int valread;
+  while ((valread = read(new_socket, buffer, BUFFER_SIZE - 1)) > 0) {
+    buffer[valread] = '\0'; // Null-terminate the received data
+    total_read += valread;
+    jwt_buffer = realloc(jwt_buffer, total_read + 1);
+    if (jwt_buffer == NULL) {
+      perror("realloc failed");
+      goto error_server;
+    }
+
+    logger("Socket", "Data read from socket\n");
+    logger("Socket", buffer);
+    strcat(jwt_buffer, buffer);
+    break;
+  }
+  logger("Socket", "Data read from socket\n");
+  if (valread < 0) {
+    logger("Socket", "valread <0 \n");
+    perror("read");
+    free(jwt_buffer);
+    goto error_server;
+
+  }
+  logger("Socket", "valread >=0 \n");
+  // Assign the accumulated JWT to the output parameter
+  *jwt = jwt_buffer;
+
+  logger("socket print *jwt", *jwt);
+  retval = 1;
+
+error_server:
+  close(server_fd);
+error_socket:
+  close(new_socket);
+  logger("Socket", "Closed socket, returning to main\n");
+  return retval;
+}
 
 void PrintArray(char **array, int n) {
   for (int i = 0; i < n; i++) {
@@ -272,11 +368,12 @@ bool is_in_array(const char **array, const int narray, const char *claim) {
   return false;
 }
 
-bool user_in_disclosures(const char **array, const int narray,
-                         const char *username, int * index) {
+bool check_claim_in_disclosures(const char **array, const int narray,
+                                const char *claim, const char *value,
+                                int *index) {
   for (int i = 0; i < narray; i = i + 1) {
-    if (strstr((const char *)array[i], "username") != NULL) {
-      if (strstr((const char *)array[i], username) != NULL) {
+    if (strstr((const char *)array[i], claim) != NULL) {
+      if (strstr((const char *)array[i], value) != NULL) {
         *index = i;
         return true;
       } else {

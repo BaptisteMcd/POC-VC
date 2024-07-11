@@ -1,3 +1,4 @@
+#include <security/_pam_types.h>
 #define _GNU_SOURCE
 #include <curl/curl.h>
 #include <security/pam_ext.h>
@@ -13,24 +14,70 @@
 #include <unistd.h>
 // #include <libpq-fe.h>
 #include <postgresql/libpq-fe.h>
+#include <security/pam_ext.h>
 
 #include "../include/b64.h"
 #include "../include/kc_auth.h"
 #include "../include/logger.h"
 
 // Certificate to validate the JWT against
-#define TOKEN_FILE ".token"
+// #define TOKEN_FILE ".token"
+#define TOKEN_FILE "/home/bat/POC-VC/projet/Pam_modules/.token"
 #define TOKEN_FIELD "sd_jwt_token"
 #define TRUSTED_CERTIFICATE_PATH                                               \
   "/etc/ssl/certs/keycloak_verifiable-credentials.pem"
 
+#define PORT 12345
 void cleanup_pointer(pam_handle_t *handle, void *data, int error_status) {
   free(data);
 } // Cleanup function
 
+static int converse(pam_handle_t *pamh, int nargs,
+                    const struct pam_message **message,
+                    struct pam_response **response) {
+  struct pam_conv *conv;
+  logger("request pass", "just entered converse");
+  int retval = pam_get_item(pamh, PAM_CONV, (void *)&conv);
+  if (retval != PAM_SUCCESS) {
+    logger("request pass", "could not get item PAM_CONV");
+    return retval;
+  }
+  logger("request pass", "could get item PAM_CONV : conving rn");
+  return conv->conv(nargs, message, response, conv->appdata_ptr);
+}
+
+static char *request_pass(pam_handle_t *pamh, int echocode,
+                          const char *prompt) {
+  // Query user for verification code
+  logger("request pass", "just entered");
+  const struct pam_message msg = {.msg_style = echocode, .msg = prompt};
+  const struct pam_message *msgs = &msg;
+  struct pam_response *resp = NULL;
+  int retval = converse(pamh, 1, &msgs, &resp);
+  char *ret = NULL;
+  if (retval != PAM_SUCCESS || resp == NULL || resp->resp == NULL ||
+      *resp->resp == '\000') {
+    logger("request pass", "Did not receive code from user");
+    if (retval == PAM_SUCCESS && resp && resp->resp) {
+      ret = resp->resp;
+    }
+  } else {
+    ret = resp->resp;
+  }
+
+  // Deallocate temporary storage
+  if (resp) {
+    if (!ret) {
+      free(resp->resp);
+    }
+    free(resp);
+  }
+
+  return ret;
+}
+
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
                                    const char **argv) {
-  logger("pam_sm_authenticate", "username to be defined");
   printf("pam_sm_authenticate\n");
 
   int pam_code, retval_code = PAM_SUCCESS;
@@ -40,24 +87,30 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
   char **SD_array = NULL, **SD_json = NULL, **decoded_SD = NULL;
   int nSD_array, nSD_json, length;
 
+  char *public_key = NULL;
+
   int ndisclosures = 0;
   char **parsed_sd_jwt = NULL;
 
-  /* Asking the application for an  username */
   pam_code = pam_get_user(handle, &username, "USERNAME: ");
+  logger("pam_sm_authenticate vc pam", username);
   if (pam_code != PAM_SUCCESS) {
     fprintf(stderr, "Can't get username");
     logger("pam_sm_authenticate vc pam", "Could not get username");
     retval_code = PAM_PERM_DENIED;
     goto cleanup;
   }
+
+  // pam_prompt(handle, int style, char **response, const char *fmt, ...)
   /* Asking the application for a token */
   asprintf(&prompt,
-           "Token-based authentication, file: %s, field: %s.\nYou will need to "
-           "disclose your username.\nContinue ? (y/N)  ",
-           TOKEN_FILE, TOKEN_FIELD);
+           "SD-JWT Verifiable Credential based authentication.\nTo access this "
+           "ressource, you have to send your SD-JWT presentation at PORT : "
+           "%d.\nYou will need to disclose your username.\nContinue ? (y/N)  ",
+           PORT);
   pam_code = pam_get_authtok(handle, PAM_AUTHTOK, &token, prompt);
   free(prompt);
+  logger("vc auth just after the prompt", token);
   if (pam_code != PAM_SUCCESS || token == NULL) {
     fprintf(stderr, "Can't get user token\n");
     logger("pam_sm_authenticate vc pam", "Could not get token");
@@ -67,16 +120,27 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
   if (!(strcmp(token, "Y") == 0 || strcmp(token, "y") == 0)) {
     retval_code = PAM_TRY_AGAIN;
     printf("User denied token-based authentication\n");
+    logger("pam_sm_authenticate vc pam",
+           "User denied token-based authentication");
     goto cleanup;
   }
+  free(token);
+  // read_token(TOKEN_FILE, (char **)&token, TOKEN_FIELD);
 
-  read_token(TOKEN_FILE, (char **)&token, TOKEN_FIELD);
+  // Get the token from the socket
+  receive_jwt_socket((char **)&token, PORT);
+  logger("auth", "inside main");
+  char *token_info;
+  asprintf(&token_info, "The token is %s\nThe lenght of this token is %ld",
+           token, strlen(token));
+  logger("token info from socket retrieved by socket : ", token_info);
+  free(token_info);
+
   if (token == NULL || strcmp(token, "") == 0) {
     fprintf(stderr, "Null authentication token is not allowed!.");
     retval_code = PAM_BAD_ITEM;
     goto cleanup;
   }
-  char *public_key = NULL;
   public_key = (char *)get_pub_key(TRUSTED_CERTIFICATE_PATH);
 
   char *full_sd_jwt = NULL;
@@ -96,9 +160,10 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
     retval_code = PAM_PERM_DENIED;
     goto cleanup;
   };
+
   int index;
-  if (user_in_disclosures((const char **)decoded_SD, length, username,
-                          &index) != 1) {
+  if (check_claim_in_disclosures((const char **)decoded_SD, length, "username",
+                                 username, &index) != 1) {
     fprintf(stderr, "User not in the disclosed claims\n");
     retval_code = PAM_PERM_DENIED;
     goto cleanup;

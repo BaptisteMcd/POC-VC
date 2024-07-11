@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <curl/curl.h>
 #include <postgresql/libpq-fe.h>
 #include <security/pam_ext.h>
@@ -12,124 +13,163 @@
 #include <time.h>
 #include <unistd.h>
 // #include <libpq-fe.h>
+#include "../include/b64.h"
 #include "../include/kc_auth.h"
 #include "../include/logger.h"
+#include <security/pam_appl.h>
 // #include "../src/kc_auth.c"
+
+#define TOKEN_FILE "/tmp/.token"
+#define TOKEN_FIELD "sd_jwt_token"
+#define TRUSTED_CERTIFICATE_PATH                                               \
+  "/etc/ssl/certs/keycloak_verifiable-credentials.pem"
 
 void cleanup_pointer(pam_handle_t *handle, void *data, int error_status) {
   free(data);
 }
 
-void change_pass(const char *, const char *);
+static int converse(pam_handle_t *pamh, int nargs,
+                    const struct pam_message **message,
+                    struct pam_response **response) {
+  struct pam_conv *conv;
+  logger("request pass", "just entered converse");
+  int retval = pam_get_item(pamh, PAM_CONV, (void *)&conv);
+  if (retval != PAM_SUCCESS) {
+    logger("request pass", "could not get item PAM_CONV");
+    return retval;
+  }
+    logger("request pass", "could get item PAM_CONV : conving rn");
+  return conv->conv(nargs, message, response, conv->appdata_ptr);
+}
 
-void change_pass(const char *username, const char *password) {
-  // TO REWRITE ?
+static char *request_pass(pam_handle_t *pamh, int echocode,
+                          const char *prompt) {
+  // Query user for verification code
+  logger("request pass", "just entered");
+  const struct pam_message msg = {.msg_style = echocode, .msg = prompt};
+  const struct pam_message *msgs = &msg;
+  struct pam_response *resp = NULL;
+  int retval = converse(pamh, 1, &msgs, &resp);
+  char *ret = NULL;
+  if (retval != PAM_SUCCESS || resp == NULL || resp->resp == NULL ||
+      *resp->resp == '\000') {
+    logger("request pass", "Did not receive code from user");
+    if (retval == PAM_SUCCESS && resp && resp->resp) {
+      ret = resp->resp;
+    }
+  } else {
+    ret = resp->resp;
+  }
+
+  // Deallocate temporary storage
+  if (resp) {
+    if (!ret) {
+      free(resp->resp);
+    }
+    free(resp);
+  }
+
+  return ret;
 }
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
                                    const char **argv) {
-  int pam_code;
   const char *username = NULL;
-  const char *password = NULL;
+  int retval_code;
 
-  char *access_token;
-  char *id_token;
-  char *refresh_token;
+  logger("auth", "just before prompr conversation");
+  request_pass(handle, PAM_TEXT_INFO, "LOL tu l'as vu ?\n");
+  logger("auth", "just after prompr conversation");
+  retval_code = pam_get_user(handle, &username, "USERNAME: ");
+  /* Asking the application for a token */
+  char *prompt = NULL, *hash = NULL;
+  asprintf(&prompt,
+           "Token-based authentication, file: %s, field: %s.\nYou will need to "
+           "disclose your username.\nContinue ? (y/N)  ",
+           TOKEN_FILE, TOKEN_FIELD);
+  const char *token = NULL;
+  retval_code = pam_get_authtok(handle, PAM_AUTHTOK, &token, prompt);
 
-  char *pubkey;
-  char *client_access_token;
-  char *client_id_token;
+  // My arrays of char **
+  char **SD_array = NULL, **SD_json = NULL, **decoded_SD = NULL;
+  int nSD_array, nSD_json, ndecoded_SD;
+
+  char *public_key = NULL;
+
+  int ndisclosures = 0;
+  char **parsed_sd_jwt = NULL;
 
   /* Asking the application for an  username */
-  pam_code = pam_get_user(handle, &username, "USERNAME: ");
-  if (pam_code != PAM_SUCCESS) {
+  if (retval_code != PAM_SUCCESS) {
     fprintf(stderr, "Can't get username");
     return PAM_PERM_DENIED;
   }
   logger("pam_sm_authenticate pg pam", username);
 
-  // Temporary shunt if user is postgres
+  if (!(strcmp(token, "Y") == 0 || strcmp(token, "y") == 0)) {
+    retval_code = PAM_TRY_AGAIN;
+    printf("User denied token-based authentication\n");
+    logger("pam vc pg", "user denied token authentication");
+    goto cleanup;
+  }
+  free(prompt);
+  // Shunt if user is postgres
   if (strcmp(username, "postgres") == 0) {
     // check password
-    pam_code = pam_get_authtok(handle, PAM_AUTHTOK, &password, "PASSWORD: ");
-    if (pam_code != PAM_SUCCESS) {
+    if (retval_code != PAM_SUCCESS) {
       fprintf(stderr, "Can't get password");
       return PAM_PERM_DENIED;
     }
-    if (strcmp(password, "postgres") != 0) {
+    if (strcmp(token, "postgres") != 0) {
       fprintf(stderr, "Wrong password\n");
       return PAM_PERM_DENIED;
     }
     return PAM_SUCCESS;
   }
-  // Récupération des jetons
-  char path_tokens[512];
-
-  sprintf(
-      path_tokens,
-      "/tmp/.tokens"); // sprintf(path_tokens, "/home/%s/.tokens", username);
-  FILE *pTokensFile = fopen(path_tokens, "r");
-  if (pTokensFile == NULL) {
-    printf("Erreur lors de l'ouverture du fichier .tokens\n");
-    logger("test", "Erreur lors de l'ouverture du fichier .tokens");
-    return PAM_AUTHINFO_UNAVAIL;
+  read_token(TOKEN_FILE, (char **)&token, TOKEN_FIELD);
+  if (retval_code != PAM_SUCCESS || token == NULL) {
+    fprintf(stderr, "Can't get user token\n");
+    logger("pam_sm_authenticate vc pam", "Could not get token");
+    retval_code = PAM_AUTHTOK_ERR;
+    goto cleanup;
   }
 
-  read_tokens("/tmp/.tokens", &access_token, &id_token, &refresh_token);
-  fclose(pTokensFile);
-  if (access_token == NULL || id_token == NULL || refresh_token == NULL) {
-    printf("Erreur lors de la lecture des tokens\n");
-    logger("test", "Erreur lors de la lecture des tokens");
-    return PAM_AUTHINFO_UNAVAIL;
+  if (token == NULL || strcmp(token, "") == 0) {
+    fprintf(stderr, "Null authentication token is not allowed!.");
+    retval_code = PAM_BAD_ITEM;
+    goto cleanup;
   }
-  logger("pg auth", "success dans la récupération des jetons");
+  public_key = (char *)get_pub_key(TRUSTED_CERTIFICATE_PATH);
 
-  bool success_getting_pk = getpubkey(&pubkey);
-  if (!success_getting_pk) { // Public key not retrieved
-    printf("Clé publique non récupérée\n");
-    logger("pg auth", "clé publique non récupérée");
-  }
-  logger("pg auth", "Clé publique récupérée dans le main\n");
-
-  char *claim = "resource_access";
-  char *token_user;
-  bool succes_token_validation =
-      validate_token((const char **)&access_token, (const char **)&pubkey,
-                     &claim, &token_user);
-  if (!succes_token_validation) { // Le jeton n'a pas été validé
-    logger("Auth token", "TOKEN NOT VALIDATED");
-    return PAM_PERM_DENIED;
-  }
-  logger("auth pg jeton valide pour utilisateur : ", token_user);
-
-  if (strcmp(token_user, username) !=
-      0) { // Le jeton ne correspond pas au nom de utilisateur
-    logger("auth pg", "username of linux session and token_user are different");
-    return PAM_PERM_DENIED;
-  }
-  logger("auth pg", "username of linux session and token_user are the same");
-
-  if (!jeton_client("openid", &client_access_token,
-                    &client_id_token)) { // Failed to retrieve client token
-    logger("pg auth", "Failed to retrieve client token");
-    return PAM_AUTHINFO_UNAVAIL;
+  char *full_sd_jwt = NULL;
+  full_sd_jwt = strdup(token);
+  parse_SD_JWT_VC(full_sd_jwt, &parsed_sd_jwt, &ndisclosures);
+  if (!validate_jwt((const char **)&parsed_sd_jwt[0],
+                    (const char **)&public_key)) {
+    // The token is a valid token signed from a trusted source
+    retval_code = PAM_PERM_DENIED;
+    goto cleanup;
   }
 
-  if (!verif_existance_utilisateur(
-          username,
-          (const char **)&client_access_token)) { // Bad authentification
-    fprintf(stderr, "Wrong username or password\n");
-    logger("pg authenticate bad utilisateur non trouvé", username);
-    return PAM_USER_UNKNOWN;
+  // Check if the username is in the disclosed claims
+  if (decode_all_sd((const char **)parsed_sd_jwt, ndisclosures, &decoded_SD,
+                    &ndecoded_SD) != 1) {
+    fprintf(stderr, "Could not decode the SDs\n");
+    retval_code = PAM_PERM_DENIED;
+    goto cleanup;
+  };
 
-  } // Good authentification
+  //  logger("auth pg jeton valide pour utilisateur : ", token_user);
+  int index;
+  check_claim_in_disclosures((const char **)decoded_SD, ndecoded_SD, "roles",
+                             "ADMIN", &index);
 
   // Now we need to allows the roles for PGSQL
   char **list_roles_kc;
   int nroles_kc;
 
-  if (!parse_role_claims((const char **)&claim, "Client-test", &list_roles_kc,
-                         &nroles_kc)) {
+  if (!parse_role_claims((const char **)&decoded_SD[index], "names",
+                         &list_roles_kc, &nroles_kc)) {
     logger("pg authenticate", "Failed to parse role claims but user is legit");
     cleanupArray(list_roles_kc, nroles_kc);
     return PAM_SUCCESS;
@@ -162,7 +202,8 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
   char **list_roles_db;
   int nroles_db;
   // Get the roles contained in the db for the specified user
-  getUserRoles(conn, "firstuser", &list_roles_db, &nroles_db);
+  getUserRoles(conn, username, &list_roles_db, &nroles_db);
+  logger("pg authenticate", "user roles retrieved");
   assignAuthorizedRoles(conn, (const char **)list_roles_db, nroles_db,
                         (const char **)list_roles_kc, nroles_kc);
 
@@ -170,12 +211,14 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
   // cleanupArray(list_roles_db, nroles_db);
   // cleanupArray(list_roles_kc, nroles_kc);
   /* ferme la connexion à la base et nettoie */
-  PQfinish(conn);
 
   logger("pg authenticate good allowing", username);
   printf("Welcome, %s\n", username);
   pam_set_item(handle, PAM_USER, username);
-  return PAM_SUCCESS;
+cleanup:
+  PQfinish(conn);
+
+  return retval_code;
 }
 
 PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags, int argc,
@@ -270,7 +313,6 @@ PAM_EXTERN int pam_sm_chauthtok(pam_handle_t *pamh, int flags, int argc,
                                      &refresh_token)) // to rewrite right here
     {
       pam_get_authtok(pamh, PAM_AUTHTOK, &new_password, "New password: ");
-      change_pass(username, new_password);
     } else {
       return PAM_PERM_DENIED;
     }

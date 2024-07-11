@@ -15,12 +15,12 @@ Vérif token ->
 select 'admin' from information_schema.role_table_grants WHERE grantee='firstuser';
 chema de vérification si un utilisateur possède le role admin
 
-Donner un role admin à un utilisateur : 
+Donner un role admin à un utilisateur :
 
     GRANT admin1 TO firstuser;
 
 
-Permissions 
+Permissions
 
     SELECT * FROM pg_roles WHERE rolname='firstuser';
 
@@ -53,4 +53,16 @@ Liste et roles des databases :
 
     \l
 
-TODO : finir les droits pour que l'utilisteur puisse se connecter
+L'utilitaire psql :
+Réglages des paramètres de connexions dans  /etc/postgresql/[PGSQL_VERSION]/main/pg_hba.conf
+
+Type local correspond à une connexion par socket unix
+Soit avec l'utilitaire psql.
+Si l'on souhaite se connecter en IPv4, c'est possible et cela correspond à l'entrée host.
+Il est également possible de modifier les méthodes d'authentification.
+
+Concernant l'entrée des mots de passes : 
+Il habituel de saisir le mot de passer dans le cli après un prompt.
+Mais il est également possible de le passer dans une variable d'environnement ou dans un fichier.
+
+Je vais dans notre exemple utiliser une variable d'environnement.

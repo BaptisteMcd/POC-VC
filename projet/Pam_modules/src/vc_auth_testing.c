@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <curl/curl.h>
 
-#include "../include/logger.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,18 +97,6 @@ int main() {
 
   char **SD_json = NULL;
   int nSD_json;
-  valid = json_array_2_array(&decoded_SD[0], &SD_json, &nSD_json);
-  assert(valid == 1);
-
-  valid = is_in_array((const char **)SD_json, nSD_json, "roles");
-  printf("The claim role is %s\n", valid ? "present" : "absent");
-  assert(valid == 1);
-
-  valid = is_in_array((const char **)SD_json, nSD_json, "ADMIN1");
-  printf("The claim ADMIN1 is %s\n", valid ? "present" : "absent");
-  assert(valid == 1);
-
-  PrintArray(SD_json, nSD_json);
 
   char *hash = NULL;
   assert(SHA256_sum(parsed_sd_jwt[1], &hash) == 1);
@@ -122,8 +110,8 @@ int main() {
                : "differs disclosure isn't valid");
   PrintArray(SD_array, nSD_array);
   int index;
-  valid =
-      user_in_disclosures((const char **)decoded_SD, length, "toto", &index);
+  valid = check_claim_in_disclosures((const char **)decoded_SD, length,
+                                     "username", "toto", &index);
 
   assert(valid == 1);
   printf("The user toto is in the disclosed claims, claim index %d\n", index);
@@ -133,9 +121,32 @@ int main() {
                                parsed_sd_jwt[index]);
 
   assert(valid == 1);
-  printf("The claim is in the _sd of the jwt, the user is verified\n");
-  // TODO
-  //  checker les grants exacts
+  printf(
+      "The claimed username is in the _sd of the jwt, the user is verified\n");
+
+  // Same thing but to test if use is admint
+  printf("Here are the decoded SDs \n");
+  PrintArray(decoded_SD, length);
+
+  // Check roles given to the user
+
+  valid = check_claim_in_disclosures(
+      (const char **)decoded_SD, length, "roles", "ADMIN",
+      &index); // Any admin role will return the right index
+
+  assert(valid == 1);
+  valid = check_claim_validity((const char **)SD_array, nSD_array,
+                               parsed_sd_jwt[index + 1]);
+  assert(valid == 1);
+  printf("The claim just checked is : %s\n", parsed_sd_jwt[index + 1]);
+  free(SD_json);
+
+  char **role_names = NULL;
+  int nroles_names;
+  parse_role_claims((const char **)&decoded_SD[index], "names", &role_names,
+                    &nroles_names);
+  printf("The roles found in the jwt are : \n");
+  PrintArray(role_names, nroles_names);
   //  TODO : free() les pointeurs
   return 0;
 }
