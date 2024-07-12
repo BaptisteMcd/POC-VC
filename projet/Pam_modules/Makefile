@@ -29,25 +29,25 @@ PAM_SO_DIR = /lib/x86_64-linux-gnu/security
 TARGET = $(PAM_SO_DIR)/pam_custom.so
 custom: $(TARGET)
 $(TARGET): $(OBJ_FILES)
-	sudo ld $(LDFLAGS) obj/main.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o  obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o -x --shared -o $(TARGET)
+	ld $(LDFLAGS) obj/main.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o  obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o -x --shared -o $(TARGET)
 
 
 # Pam custom for postgresql authentication
 TARGET2 = $(PAM_SO_DIR)/pam_cpgsql.so
 pgsql: $(TARGET2)
 $(TARGET2): $(OBJ_FILES)
-	sudo ld $(LDFLAGS) obj/main_pg.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o -x --shared -o $(TARGET2)
+	ld $(LDFLAGS) obj/main_pg.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o -x --shared -o $(TARGET2)
 
 # Pam custom for verifiable credentials (SD-JWT) authentication
 TARGET3 = $(PAM_SO_DIR)/pam_vc.so
 vc: $(TARGET3)
 $(TARGET3): $(OBJ_FILES)
-	sudo ld $(LDFLAGS) obj/main_vc.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o -x --shared -o $(TARGET3)
+	ld $(LDFLAGS) obj/main_vc.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o -x --shared -o $(TARGET3)
 
 TARGET4 = $(PAM_SO_DIR)/pam_pg_vc.so
 pg_vc: $(TARGET4)
 $(TARGET4): $(OBJ_FILES)
-	sudo ld $(LDFLAGS) obj/main_pg_vc.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o -x --shared -o $(TARGET4)
+	ld $(LDFLAGS) obj/main_pg_vc.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o -x --shared -o $(TARGET4)
 
 vc_test:
 	gcc -o vc_testing obj/vc_auth_testing.o obj/dump.o obj/error.o obj/hashtable.o obj/hashtable_seed.o obj/kc_auth.o obj/load.o obj/logger.o obj/memory.o obj/pack_unpack.o obj/strbuffer.o obj/strconv.o obj/utf.o obj/value.o obj/version.o obj/jwt.o obj/jwt-openssl.o obj/base64.o obj/b64.o $(LDFLAGS) -lpthread

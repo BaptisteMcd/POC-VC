@@ -19,7 +19,7 @@
 #include <security/pam_appl.h>
 // #include "../src/kc_auth.c"
 
-#define TOKEN_FILE "/tmp/.token"
+#define TOKEN_FILE ".token"
 #define TOKEN_FIELD "sd_jwt_token"
 #define TRUSTED_CERTIFICATE_PATH                                               \
   "/etc/ssl/certs/keycloak_verifiable-credentials.pem"
@@ -28,49 +28,7 @@ void cleanup_pointer(pam_handle_t *handle, void *data, int error_status) {
   free(data);
 }
 
-static int converse(pam_handle_t *pamh, int nargs,
-                    const struct pam_message **message,
-                    struct pam_response **response) {
-  struct pam_conv *conv;
-  logger("request pass", "just entered converse");
-  int retval = pam_get_item(pamh, PAM_CONV, (void *)&conv);
-  if (retval != PAM_SUCCESS) {
-    logger("request pass", "could not get item PAM_CONV");
-    return retval;
-  }
-    logger("request pass", "could get item PAM_CONV : conving rn");
-  return conv->conv(nargs, message, response, conv->appdata_ptr);
-}
 
-static char *request_pass(pam_handle_t *pamh, int echocode,
-                          const char *prompt) {
-  // Query user for verification code
-  logger("request pass", "just entered");
-  const struct pam_message msg = {.msg_style = echocode, .msg = prompt};
-  const struct pam_message *msgs = &msg;
-  struct pam_response *resp = NULL;
-  int retval = converse(pamh, 1, &msgs, &resp);
-  char *ret = NULL;
-  if (retval != PAM_SUCCESS || resp == NULL || resp->resp == NULL ||
-      *resp->resp == '\000') {
-    logger("request pass", "Did not receive code from user");
-    if (retval == PAM_SUCCESS && resp && resp->resp) {
-      ret = resp->resp;
-    }
-  } else {
-    ret = resp->resp;
-  }
-
-  // Deallocate temporary storage
-  if (resp) {
-    if (!ret) {
-      free(resp->resp);
-    }
-    free(resp);
-  }
-
-  return ret;
-}
 
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
                                    const char **argv) {
@@ -78,7 +36,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
   int retval_code;
 
   logger("auth", "just before prompr conversation");
-  request_pass(handle, PAM_TEXT_INFO, "LOL tu l'as vu ?\n");
+  //request_pass(handle, PAM_TEXT_INFO, "LOL tu l'as vu ?\n");
   logger("auth", "just after prompr conversation");
   retval_code = pam_get_user(handle, &username, "USERNAME: ");
   /* Asking the application for a token */

@@ -111,6 +111,8 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
   pam_code = pam_get_authtok(handle, PAM_AUTHTOK, &token, prompt);
   free(prompt);
   logger("vc auth just after the prompt", token);
+  // return PAM_SUCCESS;
+
   if (pam_code != PAM_SUCCESS || token == NULL) {
     fprintf(stderr, "Can't get user token\n");
     logger("pam_sm_authenticate vc pam", "Could not get token");
@@ -142,13 +144,15 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
     goto cleanup;
   }
   public_key = (char *)get_pub_key(TRUSTED_CERTIFICATE_PATH);
-
+  logger("auth main vc", "just got certificate");
   char *full_sd_jwt = NULL;
   full_sd_jwt = strdup(token);
   parse_SD_JWT_VC(full_sd_jwt, &parsed_sd_jwt, &ndisclosures);
   if (!validate_jwt((const char **)&parsed_sd_jwt[0],
                     (const char **)&public_key)) {
     // The token is a valid token signed from a trusted source
+    logger("auth main vc", "jwt is not valid");
+
     retval_code = PAM_PERM_DENIED;
     goto cleanup;
   }
@@ -157,17 +161,21 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
   if (decode_all_sd((const char **)parsed_sd_jwt, ndisclosures, &decoded_SD,
                     &length) != 1) {
     fprintf(stderr, "Could not decode the SDs\n");
+    logger("auth main vc", "Could not decode the SDs");
     retval_code = PAM_PERM_DENIED;
     goto cleanup;
   };
+  logger("auth main vc", "SDs decoded succesfully");
 
   int index;
   if (check_claim_in_disclosures((const char **)decoded_SD, length, "username",
                                  username, &index) != 1) {
     fprintf(stderr, "User not in the disclosed claims\n");
+    logger("auth main vc", "User not in the disclosed claims");
     retval_code = PAM_PERM_DENIED;
     goto cleanup;
   }; // User is in the disclosed claims at the index
+  logger("auth main vc", "User is inside disclosed claims");
 
   // Check if the claimed disclosed actually true is in the _sd
   grants = extract_grant_jwt((const char **)&parsed_sd_jwt[0], "_sd");
@@ -182,7 +190,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
     goto cleanup;
   }
   pam_set_item(handle, PAM_USER, username);
-
+  logger("main vc auth","going to cleanup");
 cleanup:
   if (public_key != NULL)
     free(public_key);
@@ -199,6 +207,7 @@ cleanup:
   if (parsed_sd_jwt != NULL) {
     cleanupArray(parsed_sd_jwt, ndisclosures);
   }
+  logger("main vc auth","returning ...");
   return retval_code;
 }
 
