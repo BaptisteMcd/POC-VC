@@ -1,4 +1,5 @@
 #%PAM-1.0
+
 auth        sufficient       pam_vc.so
 account     sufficient     pam_vc.so
 session  sufficient       pam_vc.so

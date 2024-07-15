@@ -110,6 +110,7 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
            PORT);
   pam_code = pam_get_authtok(handle, PAM_AUTHTOK, &token, prompt);
   free(prompt);
+  //return PAM_SUCCESS;
   logger("vc auth just after the prompt", token);
   // return PAM_SUCCESS;
 

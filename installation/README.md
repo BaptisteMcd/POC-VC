@@ -21,6 +21,7 @@ The only user not connecting to PostgreSQL via an access_token is postgres
 Execute the example init script
 
     docker exec -it <container_name> psql -U postgres -f /docker-entrypoint-initdb.d/init.sql
+    
 Input postgres's password :  postgres for now.
 
 

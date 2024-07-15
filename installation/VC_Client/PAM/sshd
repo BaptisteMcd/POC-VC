@@ -1,11 +1,9 @@
 #%PAM-1.0
 
-
 auth        sufficient       pam_vc.so
 account     sufficient     pam_vc.so
 session  sufficient       pam_vc.so
 password    sufficient       pam_vc.so
-
 
 
 auth       substack     password-auth
