@@ -708,10 +708,12 @@ bool assignRole2User(PGconn *conn, const char *role, const char *username) {
   free(query);
   if (PQresultStatus(res) != PGRES_COMMAND_OK) {
     fprintf(stderr, "Assign role to user failed : %s", PQerrorMessage(conn));
+    logger("Assign role 2 user failed", PQerrorMessage(conn));
     PQclear(res);
     exit_nicely(conn);
   }
   PQclear(res);
+  logger("Assign role 2 user", "Succeeded");
   return true;
 }
 // check if role exist in the db, if it exists in DB
@@ -744,7 +746,7 @@ bool InitSearchPath(
   return true;
 }
 
-void assignAuthorizedRoles(PGconn *conn, const char **rolesDB,
+void assignAuthorizedRoles(PGconn *conn,const char * username, const char **rolesDB,
                            const int nrolesDB, const char **rolesKC,
                            const int nrolesKC) {
   for (int i = 0; i < nrolesKC; i = i + 1) {
@@ -763,7 +765,7 @@ void assignAuthorizedRoles(PGconn *conn, const char **rolesDB,
       if (roleExists(conn, rolesKC[i])) {
         printf("        Role %s EXIST in Postgres .. Assigning role \n",
                rolesKC[i]);
-        assignRole2User(conn, rolesKC[i], "firstuser");
+        assignRole2User(conn, rolesKC[i], username);
         logger("Role assignation", rolesKC[i]);
       } else {
         printf("        Role %s DOES NOT EXIST in Postgres .. Not assigning "

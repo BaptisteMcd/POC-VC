@@ -21,13 +21,11 @@
 #include "../include/logger.h"
 
 // Certificate to validate the JWT against
-// #define TOKEN_FILE ".token"
-#define TOKEN_FILE "/home/bat/POC-VC/projet/Pam_modules/.token"
-#define TOKEN_FIELD "sd_jwt_token"
+
 #define TRUSTED_CERTIFICATE_PATH                                               \
   "/etc/ssl/certs/keycloak_verifiable-credentials.pem"
-
 #define PORT 12345
+
 void cleanup_pointer(pam_handle_t *handle, void *data, int error_status) {
   free(data);
 } // Cleanup function
@@ -128,7 +126,6 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
     goto cleanup;
   }
   free(token);
-  // read_token(TOKEN_FILE, (char **)&token, TOKEN_FIELD);
 
   // Get the token from the socket
   receive_jwt_socket((char **)&token, PORT);

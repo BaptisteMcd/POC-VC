@@ -162,8 +162,8 @@ PAM_EXTERN int pam_sm_authenticate(pam_handle_t *handle, int flags, int argc,
   char **list_roles_db;
   int nroles_db;
   // Get the roles contained in the db for the specified user
-  getUserRoles(conn, "firstuser", &list_roles_db, &nroles_db);
-  assignAuthorizedRoles(conn, (const char **)list_roles_db, nroles_db,
+  getUserRoles(conn, username, &list_roles_db, &nroles_db);
+  assignAuthorizedRoles(conn,username, (const char **)list_roles_db, nroles_db,
                         (const char **)list_roles_kc, nroles_kc);
 
   // Cleanup

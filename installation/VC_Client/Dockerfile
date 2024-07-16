@@ -13,7 +13,6 @@ ADD ./installation/VC_Client/supervisord.conf /etc/supervisord.conf
 ADD ./installation/VC_Client/kc_auth.conf /etc/kc_auth.conf
 ADD ./installation/VC_Client/keycloak_verifiable-credentials.pem /etc/ssl/certs/keycloak_verifiable-credentials.pem
 
-
 # RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
 RUN sed -i 's|session    required     pam_loginuid.so|session    optional     pam_loginuid.so|g' /etc/pam.d/sshd
 RUN touch /tmp/audit.log && chmod 777 /tmp/audit.log
@@ -40,7 +39,9 @@ RUN sed -i 's/^KbdInteractiveAuthentication\s*no/KbdInteractiveAuthentication ye
 
 
 # Use PAM with all authentifcation methods in PostgreSQL
-RUN sed -i 's|local   all             all                                     peer|local   all             all                                     pam|g' /etc/postgresql/15/main/pg_hba.conf
+# RUN sed -i 's|local   all             all                                     peer|local   all             all                                     pam|g' /etc/postgresql/15/main/pg_hba.conf
 
-EXPOSE 22 5432
+ADD ./installation/VC_Client/pg_hba.conf /data/pg_hba.conf
+
+EXPOSE 22 5432 12345 12346
 ENTRYPOINT ["/usr/bin/supervisord", "-n"]
